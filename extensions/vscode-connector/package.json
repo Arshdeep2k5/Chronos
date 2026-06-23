@@ -1,0 +1,16 @@
+{
+  "name": "chronos-vscode-connector",
+  "displayName": "Chronos VSCode Connector",
+  "description": "VSCode telemetry stream and environment restoration connector for Chronos Pilot",
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./extension.js",
+  "dependencies": {
+    "ws": "^8.21.0"
+  }
+}

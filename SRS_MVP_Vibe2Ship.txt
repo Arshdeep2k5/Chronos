@@ -1,0 +1,880 @@
+Software Requirements Specification (SRS)
+
+Chronos Pilot (v1.0 Hackathon Edition) — Local-First Project Memory System & Proactive Execution Engine
+
+Document Reference: CP-SRS-2026-V1.0-HACKATHON-FINAL
+Status: 🔒 Core Systems Architecture Baseline Frozen (Post-Audit Synthesis)
+Date: June 2026
+
+1. Product Vision & Positioning Thesis
+
+1.1 Unifying Narrative: Preventing Deadline Failure via Context Recovery
+
+Traditional productivity companions assume people miss deadlines because they
+lack reminders, task lists, or calendars. This results in standard
+schedule-optimization tools that serve as glorified calendar interfaces.
+
+Chronos Pilot is built on a deeper, contrarian hypothesis: Knowledge workers
+miss deadlines because they lose working context and fail to accurately forecast
+commitment friction.
+
+Every interruption forces a user to incur Administrative Context Debt—the
+cognitive and temporal cost of manually reopening files, locating IDE cursor
+positions, rebuilding web search tabs, and remembering design decisions. When
+the cognitive friction of resuming a project is high, workers procrastinate,
+causing scheduling failures. Furthermore, users struggle to manually track
+implicit commitments scattered across unorganized files and documents.
+
+Chronos Pilot prevents deadline failure by eliminating context loss and
+proactively recovering stalled work.
+
+The system automatically discovers commitments, predicts failures before they
+occur, generates structured recovery plans, reconstructs active workspace
+environments, and continues research while the user is away.
+
+ DISCOVER            PREDICT             PLAN             EXPLAIN            RESTORE            EXECUTE           CONTINUE
+┌─────────┐        ┌─────────┐        ┌────────┐        ┌───────────┐      ┌─────────┐        ┌─────────┐        ┌─────────┐
+│ Commit- │  ───►  │ Failure │  ───►  │ Recov- │  ───►  │ "Why Now?"│───►  │ Workspace│ ───►  │ "Start  │  ───►  │ Auton-  │
+│ ment    │        │ Fore-   │        │ ery    │        │ Diagnos-  │      │ Connect-│        │ Working"│        │ omous   │
+│ Discov- │        │ casting │        │ ning   │        │ tics      │      │ ors     │        │ Pipeline│        │ Research│
+│ ery     │        │ Engine  │        │ Engine │        │ Engine    │      │ Rebuild │        │ Restores│        │ (ARC)   │
+└─────────┘        └─────────┘        └────────┘        └───────────┘      └─────────┘        └─────────┘        └─────────┘
+
+1.2 The Demo Audit: Feature Visibility Matrix
+
+To ensure maximum impact during a high-velocity 3-minute demo run, system
+features are divided into visual UX execution vectors and silent supporting
+infrastructure:
+
+| Feature                       | Primary Story Association  | Demo Visible? | Interface Delivery Vector                                                                    |
+| :---------------------------- | :------------------------- | :------------ | :------------------------------------------------------------------------------------------- |
+| **Commitment Discovery**      | How work enters the system | **Yes**       | Ingesting a PDF/DOCX and watching the HUD instantly extract the deadline and title card.     |
+| **Risk Forecasting**          | How danger is detected     | **Yes**       | Visual indicator on the HUD displaying risk coefficients and failure curves.                 |
+| **Recovery Planning**         | How rescue occurs          | **Yes**       | Single-click "Generate Plan" showing a localized, step-by-step checklist.                    |
+| **Workspace Restoration**     | How execution begins       | **Yes**       | Clicking "Start Working" to watch the IDE open, load tabs, and position the cursor.          |
+| **Autonomous Research (ARC)** | How progress continues     | **Yes**       | "While You Were Away" panel showing newly gathered documents, papers, and summaries.         |
+| **Privacy Telemetry View**    | Security and Trust         | **Yes**       | Simple dashboard demonstrating zero external cloud telemetry and local SQLite logs.          |
+| **Why You Stopped Card**      | Momentum Recovery          | **Yes**       | "Stopping-Point Diagnostics" displaying final active search terms and line cursor positions. |
+| **Research Graph Layer**      | Context Association        | No (Infra)    | Running queries under the hood to resolve link-traversal and search queries.                 |
+| **Match Score Routing**       | File Assignment            | No (Infra)    | Automatic background routing of ingested files into target folder models.                    |
+| **Attention Weighting**       | Context Relevance          | No (Infra)    | Backend scoring loops tracking active durations and tab switch events.                       |
+
+1.3 Feasibility & Mocking Thresholds
+
+To maintain execution feasibility under tight development timelines, the
+subsystem implementation boundaries are strictly budgeted:
+
+               IMPLEMENTATION FEASIBILITY BOUNDARIES
+               
+  ┌────────────────────────────────────────────────────────┐
+  │                       MUST WORK                        │ (Deterministic Code
+  │ - File Watcher, SQLite WAL Engine, Local IPC Hub       │  & Core Pipeline
+  │ - Browser Telemetry Connector (Active URL, title, time)│  Execution)
+  │ - Browser Tab & IDE Cursor Location Restoration        │
+  └───────────────────────────┬────────────────────────────┘
+                              │
+                              ▼
+  ┌────────────────────────────────────────────────────────┐
+  │                      SHOULD WORK                       │ (Lightweight
+  │ - CDE Parsing Engine (Regex + Local Small LLM)         │  Background Loops)
+  │ - ARC Research Crawler Engine (arXiv API, local docs)   │
+  │ - Lightweight Graph Traversal (Direct node adjacency)   │
+  └───────────────────────────┬────────────────────────────┘
+                              │
+                              ▼
+  ┌────────────────────────────────────────────────────────┐
+  │               HEURISTIC / SIMULATED (CAN FAKE)         │ (Mathematical &
+  │ - Effort-Aware Estimations (Computed via presets)      │  Simulation Heuristics
+  │ - Dynamic Risk Curve Projections (Algorithmic curves)  │  Without Deep ML)
+  │ - Consequence Simulation (Deterministic decay equations)│
+  └────────────────────────────────────────────────────────┘
+
+2. Desktop Process Architecture & Worker Reliability
+
+To ensure system performance, strict data isolation, and deep OS-level telemetry
+access, Chronos Pilot is structured as a native local-first utility.
+
+                        NATIVE PROCESS TOPOLOGY
+                        
+  ┌──────────────────────────────┐       ┌──────────────────────────────┐
+  │    TAURI DESKTOP RUNTIME     │       │  LIGHTWEIGHT BROWSER EXT.    │
+  │  - SolidJS Frontend          │       │  - Active Tab URL/Title      │
+  │  - Memory Management <40MB   │       │  - Focus Duration Telemetry  │
+  └──────────────┬───────────────┘       └──────────────┬───────────────┘
+                 │                                      │
+                 │ (Secure Local Loopback IPC Channels) │
+                 └───────────────────┬──────────────────┘
+                                     │
+                                     ▼
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │                      RUST DAEMON WORKER (CORE)                      │
+  │  - notify Fs Watcher  - active-win-pos-rs Workspace  - SQLite DB    │
+  │  - user-idle Daemon   - Local IPC Hub Port           - sqlite-vec   │
+  └──────────────────────────────────┬──────────────────────────────────┘
+                                     │
+                                     │ (Loopback IPC / Cryptographic Tokens)
+                                     ▼
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │                     PYTHON AI WORKER PROCESSES                      │
+  │  - Context Parsing    - Local Embedding Vector Gen                  │
+  │  - DLQ File Parsing   - Local LLM Narrative Inference               │
+  └─────────────────────────────────────────────────────────────────────┘
+
+2.1 Worker Reliability Framework (Resilience Protocol)
+
+To ensure background Python workers do not cause system instability, they are
+managed via a strict Rust daemon controller:
+
+  - FR-2.1.1 IPC Heartbeats: Every background Python worker must emit a JSON
+    {"status": "ALIVE", "worker": "id", "memory_mb": 120} payload over local
+    loopback sockets every 5.0 seconds.
+  - FR-2.1.2 Crash Recovery: If the Rust daemon misses three consecutive
+    heartbeats (15 seconds), it terminates the target process and attempts a
+    restart. Restarts are limited to 3 within a rolling 10-minute window before
+    entering a degraded FAILED_STATE.
+  - FR-2.1.3 Dead Letter Queue (DLQ): If a specific file or document payload
+    causes an extraction subprocess to crash, the Rust daemon intercepts the
+    file hash, writes it to the dead_letter_queue table, generates a
+    non-intrusive system alert, and skips the file on subsequent startup runs.
+
+3. Ingestion & Event-Sourced Project Memory Engine
+
+3.1 Ingestion Sources
+
+  - FR-3.1.1 Filesystem Monitor: Real-time tracking of file additions and
+    updates inside user-designated project directories and ~/Downloads via a
+    low-overhead Rust notify watcher. Supports local, non-OCR text parsing of
+    PDF, DOCX, and Markdown files.
+  - FR-3.1.2 Workspace Connector Telemetry: Native extensions for modern IDEs
+    (VSCode, Cursor) that stream real-time workspace metrics: active
+    directories, open tab structures, cursor positions (file name, line number,
+    column), and focused duration.
+  - FR-3.1.3 Browser Research Telemetry Connector: A lightweight, cross-browser
+    extension (Chrome/Firefox Manifest V3) that streams active research context
+    to the Rust Daemon over local loopback IPC:
+      - Collected Data: URL, Page Title, Visit Timestamp, Active Focus Duration
+        (using a debounced 10-second active tab state timer), Domain, Tab Switch
+        Events, and raw Search Queries.
+      - Search Query Extraction: Captures queries executed across major search
+        engines (Google, DuckDuckGo) and local LLM interfaces (ChatGPT, Claude,
+        Perplexity) by parsing URI search parameters (e.g., ?q=, ?query=) and
+        active page header titles.
+      - Privacy Guardrails: The extension operates entirely on local loopback.
+        It strictly filters out and excludes matching string arrays for
+        credentials, banking domains, secure parameters, password fields, and
+        typical authentication domains (Section 4.13).
+
+3.2 Context Nodes & Append-Only Event Sourcing
+
+  - FR-3.2.1 Context Nodes: Ingested files, paths, and URLs are logged as
+    unique, stateful entities in context_nodes.
+  - FR-3.2.2 Event Ledger: All user activities associated with a node (opens,
+    edits, references, trace-backs, tab-focus) are appended to the immutable
+    context_events ledger.
+
+3.3 Dynamic Attention Weighting (W_{attn})
+
+To evaluate project focus, Chronos computes an Attention Weight for every node
+based on user behavior:
+
+W_{attn}(C_i) = \alpha \cdot \log(1 + T_{focus}) + \beta \cdot N_{edits} + \gamma \cdot N_{revisits}
+
+Where T_{focus} is active seconds inside the file/document/browser-tab,
+N_{edits} is write events, N_{revisits} is session returns. Weights are
+configured as: \alpha = 0.50, \beta = 0.35, \gamma = 0.15.
+
+3.4 Project Match Score Routing (MS)
+
+To eliminate manual task classification, new assets (C_{new}) are automatically
+routed to Projects using a multi-factor matching score:
+
+MS(C_{new}, P_j) = 0.50(S_{cos}) + 0.25(O_{ent}) + 0.15(e^{-0.05 \cdot \Delta t}) + 0.10(O_{src})
+
+Where S_{cos} is vector semantic cosine similarity, O_{ent} is entity overlap,
+\Delta t is time since project activity, and O_{src} is physical path/domain
+routing overlap.
+
+  - Auto-Route (MS \ge 0.80): Automatically bound to Project.
+  - Inbox Suggestion (0.60 \le MS < 0.80): Sent to candidate inbox for
+    verification.
+  - Unassigned (MS < 0.60): Placed in the Unassigned Inbox.
+
+3.5 Human Project Checkpoints
+
+  - FR-3.5.1 Checkpoint Submission: Users can manually document working
+    checkpoints directly via global hotkey: What was accomplished? What is
+    blocked? What is the immediate next step?
+  - FR-3.5.2 Checkpoint Overrides: Any node explicitly cited in a Human
+    Checkpoint receives an immediate 2.0 \times Attention Weight multiplier
+    (W_{attn}), overriding automated estimations during context continuation
+    retrieval.
+
+3.6 Commitment Discovery Engine (CDE)
+
+To prevent deadlines from slipping due to human configuration errors, Chronos
+Pilot does not rely solely on manual calendar entries. It actively discovers
+commitments as soon as they are saved to disk or referenced in active windows.
+
+  - FR-3.6.1 Multi-Format Ingestion: The CDE scans newly ingested or modified
+    files, downloads, PDFs, DOCX files, Markdown records, and active browser
+    session inputs.
+  - FR-3.6.2 NLP and Heuristic Extraction Pipeline: Background Python workers
+    run a localized regex and lightweight token-classification parser to extract
+    commitments. The parser target schema includes:
+      - Title: High-level name of the deliverable (e.g., "ML Assignment").
+      - Commitment Type: Categorized as ASSIGNMENT, DELIVERABLE, MEETING, or
+        OBLIGATION.
+      - Deadline: Target extraction date parsed and normalized to ISO-8601
+        format.
+      - Confidence Score (C_{conf}): A confidence range between 0.0 and 1.0
+        computed based on linguistic markers (e.g., "due on", "must submit",
+        "scheduled for").
+      - Source Link: Direct association to the underlying context_nodes primary
+        key.
+  - FR-3.6.3 Database Integration: All discovered commitments with a confidence
+    score C_{conf} \ge 0.60 are saved to the commitments table and linked
+    directly to their matched projects via the project routing logic
+    (Section 3.4).
+
+3.7 Research Session Reconstruction
+
+To turn raw, noisy browser history into actionable project context, the system
+programmatically aggregates raw HTTP records.
+
+  - FR-3.7.1 Aggregation Heuristic: Raw rows in browser_sessions are grouped
+    into discrete RESEARCH_SESSION entities when:
+      - The time-gap between consecutive page visits remains under 15.0 minutes.
+      - Pages share semantic similarity (vector distance S_{cos} \ge 0.70
+        between page titles/contents) or share active search queries.
+  - FR-3.7.2 Session Attribution: A reconstructed research session is matched to
+    a specific project P_j using the routing mechanics defined in Section 3.4.
+
+4. Proactive Action Engine & Workspace Restoration
+
+4.1 Actions and Deadlines Schema
+
+The system models project parameters within normalized SQLite relations:
+
+  - project_deadlines: Tracks explicit project milestones and target dates.
+  - project_actions: Tracks actionable steps parsed from checkpoints, developer
+    files (e.g., # TODO comments), or manual entries. Includes a required
+    estimated_effort_hours field.
+
+4.2 Effort-Aware Action Priority Score (AP)
+
+Every uncompleted action inside project_actions is evaluated every 30 minutes to
+generate an Action Priority score (AP):
+
+AP(A_k, P_j) = w_{prox} \cdot P_{prox} + w_{attn} \cdot \bar{W}_{attn}(P_j) + w_{urg} \cdot C_{urg} + w_{effort} \cdot E_{achieve}
+
+Where:
+
+  - P_{prox} = \max\left(0, 1 - \frac{t_{remaining}}{T_{horizon}}\right):
+    Normalized deadline proximity. t_{remaining} is hours remaining until the
+    target project deadline. T_{horizon} is the active planning horizon (defined
+    as 168 hours / 7 days).
+  - \bar{W}_{attn}(P_j): Average attention weight of all context nodes inside
+    project P_j over the past 48 hours.
+  - C_{urg}: Binary urgency flag (1 if the last human checkpoint marked the
+    action as a "blocker" or "immediate next step", 0 otherwise).
+  - E_{achieve} = 1 - \frac{\min(t_{effort}, T_{horizon})}{T_{horizon}}:
+    Achievability Index. Shorter tasks receive a priority boost to secure quick
+    wins as the deadline approaches.
+  - Weights are configured as: w_{prox} = 0.40, w_{attn} = 0.20, w_{urg} = 0.25,
+    w_{effort} = 0.15.
+
+4.3 "Why Now?" Diagnostics Engine (Explainable Priority)
+
+For every action with AP \ge 6.0, the Action Engine computes structural
+diagnostic audit logs mapping the mathematical drivers of the priority score.
+The HUD presents these as human-readable bullets alongside the recommendation:
+
+  - Proximity Reason (If w_{prox} \cdot P_{prox} \ge 0.25): "• Deadline is
+    imminent (under [Days] remaining)"
+  - Urgency Reason (If C_{urg} = 1): "• Explicitly marked as a blocker in last
+    checkpoint"
+  - Attention Decay Reason (If \bar{W}_{attn}(P_j) \le 0.15): "• Work has
+    stalled (no active focus detected in [Days] days)"
+  - Effort Reason (If w_{effort} \cdot E_{achieve} \ge 0.10): "• Achievable task
+    (estimated [Hours] hours to complete)"
+
+4.4 Proactive Intervention Rules (System Nudges)
+
+Rather than acting as a passive dashboard, the system monitors workspace
+patterns and actively flags high-priority tasks (Layer 1 HUD notifications) when
+specific triggers are met:
+
+  - FR-4.4.1 Deadline Threat: t_{remaining} \le 72 hours AND project attention
+    \bar{W}_{attn}(P_j) has decreased by > 50\% over the last 24 hours.
+  - FR-4.4.2 Blocker Stagnation: A checkpoint blocker action remains in state
+    PENDING for > 24 hours.
+  - FR-4.4.3 Project Abandonment: An action registers AP \ge 8.0 and zero
+    workspace events are logged for P_j in the last 48 hours.
+
+4.5 The "Start Working" Execution Pipeline
+
+The prioritized Action Card on the HUD displays a prominent "Start Working"
+button. Clicking this button executes a programmatic, low-latency workspace
+restoration sequence managed by the core daemon over secure local Connector IPC
+protocols:
+
+1.  Parse & Initiate: Locate the most recent state entry in the
+    workspace_snapshots table for the target project.
+2.  Emit Connector Command: The Core Daemon transmits an execution payload over
+    local Connector IPC channels directly to the active Workspace Connector
+    (e.g., VSCode Extension).
+3.  Environment Reconstruction: The editor automatically opens the target
+    directory, restores open tab layouts, opens the active file, and positions
+    the cursor at the precise line and column coordinate.
+4.  Browser Tab Restructuring: The local daemon broadcasts a recovery command to
+    the browser extension, which restores the URLs grouped under the last active
+    RESEARCH_SESSION for that project.
+5.  Present Cognitive Flow: The HUD slide-out opens immediately side-by-side
+    with the editor, displaying the generated reconstruction_narrative.md
+    alongside the Browser Context Card displaying research summaries, active
+    search paths, and relevant bibliography entries.
+
+4.6 Commitment Health Engine (CHE)
+
+Complementing the micro-level task Action Priority (AP), the system tracks the
+holistic health of discovered commitments.
+
+  - FR-4.6.1 Health Score Calculation: Every open commitment in the commitments
+    table is evaluated every 30 minutes to output a normalized score:
+
+Health(C_m) = w_{prog} \cdot Prog(C_m) + w_{act} \cdot Act_{rec}(P_j) + w_{time} \cdot T_{norm}(C_m) - w_{eff} \cdot E_{norm}(C_m)
+
+Where:
+
+  - Prog(C_m) \in [0,1]: Completed actions associated with this commitment
+    divided by total actions generated.
+
+  - Act_{rec}(P_j) \in [0,1]: Normalized sum of active workspace and browser
+    seconds over the past 48 hours on project P_j.
+
+  - T_{norm}(C_m) = \min\left(1.0, \frac{t_{remaining}}{168}\right): Normalized
+    time remaining, capped at a 7-day planning horizon.
+
+  - E_{norm}(C_m) = \min\left(1.0, \frac{t_{estimated\_remaining}}{168}\right):
+    Remaining action effort estimate, normalized.
+
+  - Weights are configured as: w_{prog} = 0.30, w_{act} = 0.25, w_{time} = 0.25,
+    w_{eff} = 0.20.
+
+  - FR-4.6.2 Discrete Health Status Mapping:
+
+      - GREEN (Health \ge 0.70): Progress tracks ahead of schedule; regular
+        focus detected.
+      - YELLOW (0.40 \le Health < 0.70): Slower completion rates or moderate
+        attention gaps.
+      - RED (Health < 0.40): Low recent activity combined with high remaining
+        effort relative to time remaining.
+
+4.7 Deadline Failure Forecasting
+
+  - FR-4.7.1 Mathematical Risk Coefficient: The Python and Rust background
+    daemons run predictive calculations to evaluate the probability of missing a
+    commitment. The risk metric (Risk) represents the ratio of estimated effort
+    remaining to actual available focused working hours:
+
+Risk(C_m) = \frac{\sum t_{effort\_remaining}}{T_{available\_window}}
+
+Where T_{available\_window} is computed dynamically from the user's historical
+daily average workspace and browser focused duration (derived from
+context_events over a rolling 14-day window).
+
+  - FR-4.7.2 Deadline Threat Alert: If Risk(C_m) \ge 0.70 (meaning remaining
+    work exceeds 70% of historical available work capacity prior to the
+    deadline), the system triggers a Deadline Threat Alert on the HUD, prompting
+    the user to generate a recovery plan.
+
+4.8 Recovery Planning Engine (RPE)
+
+  - FR-4.8.1 Automated Generation Trigger: When a commitment transitions to RED
+    status or fires a Deadline Threat Alert (Risk \ge 0.70), the HUD generates a
+    prompt to run a recovery plan.
+  - FR-4.8.2 Plan Synthesis: The local Python AI worker queries:
+    1.  The uncompleted actions associated with project P_j.
+    2.  The historical user velocity (completed effort hours per day).
+    3.  The time remaining before the ISO-8601 deadline.
+  - FR-4.8.3 Output Schema: The engine structures a chronological schedule,
+    segmenting remaining effort hours across the days remaining. The payload is
+    written to recovery_plans and displayed as an interactive checklist on the
+    HUD:
+
+-- RECOVERY PLAN: ML Assignment --
+[Today] - Complete literature review & parse inputs (3.5h)
+[Tomorrow] - Train local classifier & run baseline (4.0h)
+[Wednesday] - Finalize report writing & export PDFs (2.5h)
+
+4.9 Momentum Loss Detection
+
+  - FR-4.9.1 Workspace Inactivity Trigger: The Rust daemon tracks idle states
+    and event logging. If the system logs zero file writes, zero active browser
+    events, and zero workspace checkpoint entries for a project P_j for a
+    continuous window of 48.0 hours, it triggers a Momentum Loss Alert.
+  - FR-4.9.2 Recommended Restart Card: Instead of a generic reminder, the system
+    constructs a restart recipe on the HUD, compiling:
+      - The date/time last active.
+      - The explicit blocker documented in the last project_checkpoints record.
+      - A prominent "Resume [Project Name]" button linked directly to the
+        Restoration Pipeline.
+
+4.10 Consequence Simulation Engine
+
+To bypass standard task list fatigue, the priority metrics incorporate simulated
+outcomes to show the cost of postponement.
+
+  - FR-4.10.1 Probability Degradation Projection: For high-priority tasks
+    (AP \ge 6.0), the system calculates a degradation estimation showing the
+    impact of ignoring the task for 24 hours:
+
+P_{completion}(t + 24) = P_{completion}(t) \cdot e^{-\lambda \cdot \left(\frac{24}{t_{remaining}}\right)}
+
+Where \lambda = 0.15 represents a baseline complexity scalar.
+
+  - FR-4.10.2 Predictive Consequence Feed: The HUD displays the simulated delta
+    on the target Action Card (e.g., "If ignored for 24 hours: Completion
+    Probability falls from 78% to 54% (+24% risk increase)").
+
+4.11 Commitment Timeline Simulator
+
+To provide a concrete visual projection of progress, the system constructs
+temporal forecast simulations.
+
+  - FR-4.11.1 Simulation Engine: Simulates 1,000 daily micro-runs of the
+    remaining project timeline from current time t_0 to deadline t_{deadline}.
+    The system draws from historical workspace focus velocity (mean daily
+    capacity \mu and variance \sigma^2 derived from context_events logs).
+  - FR-4.11.2 Completion Probability (P_{comp}): The timeline simulator
+    calculates completion likelihood as:
+
+P_{comp}(t) = \frac{1}{1 + e^{k \cdot (Risk(t) - 1.0)}}
+
+Where Risk(t) is the dynamic failure forecast coefficient defined in
+Section 4.7, and k = 10.0 represents a logistic scaling constant.
+
+  - FR-4.11.3 Failure Intercept Point (T_{fail}): The timeline charts the
+    projected trajectory and highlights the exact date where the cumulative
+    estimated effort curve crosses the historical output baseline.
+
+4.12 Stopping-Point Diagnostics ("Why You Stopped")
+
+When the system triggers a Momentum Loss Alert (Section 4.9), it compiles a
+precise diagnostic trace of the user's focus state immediately prior to
+abandonment.
+
+  - FR-4.12.1 Analytical Splicing: The Python AI worker runs sequence parsing of
+    the final 15 minutes of user telemetry recorded in context_events before the
+    idle transition:
+      - Final Open File: Identifies the last edited or focused codebase node and
+        the specific line and column cursor coordinates.
+      - Last Executed Search: Extracts the final sequence of queries in
+        search_queries linked to the active browser_sessions (e.g., "stripe
+        webhook webhookSignatureVerificationException").
+      - Active Checkpoint: Pulls the most recent documented human checkpoint
+        blockers.
+  - FR-4.12.2 Output Summary: Structures a "Why You Stopped" segment displayed
+    during restoration:
+
+-- STOPPING-POINT DIAGNOSTICS --
+Abandonment Trigger: 3 days ago.
+Likely Stopping Point: Webhook signature validation failure.
+Evidence:
+  - Final open file: billing/stripe_webhook.ts (Line 42)
+  - Final search query: "stripe webhook SignatureVerificationException local testing"
+  - Last checkpoint blocker: "Stuck trying to mock Stripe signatures locally."
+
+4.13 Privacy & Trust Guarantees
+
+To ensure complete sovereignty of user data, Chronos Pilot enforces strict
+privacy protocols locally at the database and IPC loopback bounds:
+
+  - FR-4.13.1 Local-First Sandboxing: Chronos Pilot operates strictly
+    local-first. Under no conditions shall telemetry payloads, database entries,
+    raw text parses, or local vector embeddings be transmitted to external cloud
+    systems. All parsing, narrative reconstruction, and embedding generation
+    processes must execute on the user's machine.
+  - FR-4.13.2 Keystroke and Form Isolation: The workspace and browser connectors
+    operate strictly as focus-monitoring trackers. The system is structurally
+    prohibited from recording raw keystrokes, active form field inputs, login
+    passwords, secure tokens, or cookie payloads.
+  - FR-4.13.3 Telemetry Dashboard visibility: The system provides a secure local
+    dashboard in the Tauri front-end where the user can query, search, prune, or
+    completely wipe historical rows inside browser_sessions, context_events, and
+    search_queries.
+
+5. Context Continuation Engine (CCE) & Auditable Provenance
+
+5.1 Cognitive Retrieval & Narrative Reconstruction
+
+Upon workspace restoration, the system automatically writes a Markdown document
+(reconstruction_narrative.md) to the local ./chronos_staged/ directory. To
+construct the narrative context, the engine ranks associated project nodes using
+a Retrieval Score (R_{cce}):
+
+R_{cce}(C_i) = 0.35(S_{cos}(Q, C_i)) + 0.25\left(\frac{E_i}{E_{max}}\right) + 0.25(e^{-0.05 \cdot \Delta t_{event}}) + 0.15(T_i)
+
+Where Q is current workspace vector, E_i is user interactions, and T_i is Memory
+Tier.
+
+The top N = 40 highest-scoring nodes are passed to the local LLM to generate the
+narrative summary.
+
+5.2 Auditable Claim Provenance (Citation Ledger)
+
+To mitigate LLM hallucinations:
+
+  - Every factual assertion in the narrative is recorded as a claim in
+    continuation_claims.
+  - Each claim is mapped to the corresponding context source in
+    continuation_claim_sources.
+  - UX Implementation: Hovering over or clicking any claim sentence in the HUD
+    overlays a citation link displaying the source file path, timestamp, or
+    checkpoint citation.
+
+5.3 Confidence-Gated Disambiguation
+
+The engine computes an aggregate confidence metric (C_{agg}) based on the
+density and strength of retrieved source nodes.
+
+  - C_{agg} \ge 0.80 (High Confidence): Deterministic entry-point suggestion
+    (e.g., "Open stripe_webhook.ts at line 14 to resume webhook verification").
+  - C_{agg} < 0.80 (Low Confidence / High Uncertainty): The system gracefully
+    degrades to a disambiguation menu: "Confidence is low. Here are your three
+    most active historical paths. Where would you like to resume?"
+
+5.4 Autonomous Research Continuation (ARC)
+
+To maintain project context during long periods of developer absence, Chronos
+runs non-intrusive background retrieval queries during user-idle states.
+
+  - FR-5.4.1 Idle Activation Trigger: When the OS-level idle daemon detects user
+    inactivity exceeding 15.0 minutes, the Python AI worker initiates research
+    queries.
+  - FR-5.4.2 Smart Search Targeting: Instead of generic keyword searches based
+    on project titles, the query generator targets queries registered in
+    search_queries linked to the active RESEARCH_SESSION where the user spent
+    \ge 15.0 minutes without executing any subsequent code modifications
+    (indicating a cognitive blocker).
+  - FR-5.4.3 Multi-Engine Queries: The worker executes targeted background
+    searches:
+      - arXiv API: Scans for newly updated papers matching the targeted topics.
+      - GitHub Search API: Finds active open-source repositories matching
+        library patterns or framework architectures.
+      - Local Documentation Sites: Crawls and indexes cached documentation
+        files.
+  - FR-5.4.4 "While You Were Away" Briefing: Upon user return, the system writes
+    a serialized structured payload to autonomous_research_briefs. The HUD
+    generates a notification and slides open an integrated card detailing:
+      - Newly discovered references.
+      - Match relevance score based on semantic distance to local code.
+      - Condensed executive summaries of key information.
+
+5.5 Research Graph Layer
+
+The Context Engine maintains an active directed semantic graph locally to power
+discovery, forecasting, and retrieval loops.
+
+                      LIGHTWEIGHT SEMANTIC GRAPH
+                      
+                      ┌──────────────────────┐
+                      │      Project         │
+                      └──────────┬───────────┘
+                                 │
+                                 │ HAS_COMMITMENT
+                                 ▼
+     ┌──────────────┐        ┌──────────────┐ INVESTIGATES ┌──────────────────┐
+     │  Commitment  │◄───────┤    Action    ├─────────────►│ Research Session │
+     └──────────────┘ BLOCKS └──────────────┘              └────────┬─────────┘
+                                                                    │
+                                                                    │ DERIVED_FROM
+                                                                    ▼
+                                                           ┌──────────────────┐
+                                                           │  Browser Session │
+                                                           └──────────────────┘
+
+  - FR-5.5.1 Graph Nodes: Supported node types map directly to existing schema
+    relations: Project, Commitment, File, Document, Browser Session, Research
+    Session, Research Topic, Action, and Checkpoint.
+  - FR-5.5.2 Graph Edges: Directed associations between nodes are stored in the
+    database with explicit types:
+      - REFERENCES: Connects files/commits to documentation or search terms.
+      - GENERATED_FROM: Connects discovered actions/commitments to their source
+        files or checkpoints.
+      - SUPPORTS: Connects underlying tasks to larger project objectives.
+      - BLOCKS: Tracks linear dependencies between pending actions or
+        commitments.
+      - RELATED_TO: Tracks general semantic associations computed via high
+        similarity thresholds.
+      - INVESTIGATES: Maps active Research Session elements to specific projects
+        (P_j) or actions (A_k).
+      - DERIVED_FROM: Maps abstract research nodes back to physical source
+        browser_sessions or ingested PDF/DOCX documentation.
+  - FR-5.5.3 Optimization Use Cases:
+      - Context Retrieval: When restoring a workspace, the system traverses
+        edges connected to the active focus node to retrieve adjacent files and
+        active research sessions.
+      - Research Continuation: Identifies high out-degree nodes to recommend
+        relevant seed keywords for targeted ARC queries (Section 5.4).
+      - Commitment Attribution: Runs shortest-path traversal heuristics to
+        resolve which project owns an unassigned, newly discovered commitment.
+
+6. Local Database Schema (SQLite WAL Baseline)
+
+PRAGMA foreign_keys = ON;
+PRAGMA journal_mode = WAL;
+PRAGMA synchronous = NORMAL;
+
+-- System Resilience / DLQ
+CREATE TABLE IF NOT EXISTS dead_letter_queue (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    source_uri          TEXT NOT NULL,
+    payload_hash        TEXT NOT NULL UNIQUE,
+    worker_type         TEXT NOT NULL,
+    failure_reason      TEXT NOT NULL,
+    retry_count         INTEGER NOT NULL DEFAULT 0,
+    failed_at           TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Core Project Registry
+CREATE TABLE IF NOT EXISTS projects (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_name        TEXT UNIQUE NOT NULL,
+    status              TEXT NOT NULL DEFAULT 'ACTIVE', -- ACTIVE | ARCHIVED
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS project_state (
+    project_id          INTEGER PRIMARY KEY REFERENCES projects(id) ON DELETE CASCADE,
+    current_summary     TEXT NOT NULL,
+    current_entry_point TEXT,
+    next_action         TEXT,
+    confidence_score    REAL NOT NULL DEFAULT 1.0,
+    updated_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Context Memory Schema
+CREATE TABLE IF NOT EXISTS context_nodes (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id          INTEGER REFERENCES projects(id) ON DELETE SET NULL,
+    entity_key          TEXT UNIQUE NOT NULL,           -- e.g., 'FILE:/path/to/stripe.ts' or 'DOMAIN:docs.stripe.com'
+    entity_type         TEXT NOT NULL,                  -- FILE | URL | DOCUMENT | RESEARCH_TOPIC | RESEARCH_SESSION
+    display_name        TEXT NOT NULL,
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS context_events (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    node_id             INTEGER REFERENCES context_nodes(id) ON DELETE CASCADE,
+    event_type          TEXT NOT NULL,                  -- CREATED | OPENED | EDITED | REFERENCED | TAB_FOCUS
+    interaction_duration INTEGER DEFAULT 0,             -- Active focus seconds
+    captured_at         TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Telemetry Schema: Raw Browser Actions
+CREATE TABLE IF NOT EXISTS browser_sessions (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id          INTEGER REFERENCES projects(id) ON DELETE SET NULL,
+    url                 TEXT NOT NULL,
+    page_title          TEXT NOT NULL,
+    domain              TEXT NOT NULL,
+    visit_started_at    TEXT NOT NULL,
+    visit_ended_at      TEXT,
+    active_seconds      INTEGER NOT NULL DEFAULT 0,
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Telemetry Schema: Active Search Term Interception
+CREATE TABLE IF NOT EXISTS search_queries (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    browser_session_id  INTEGER REFERENCES browser_sessions(id) ON DELETE CASCADE,
+    query_text          TEXT NOT NULL,
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Commitment Discovery Engine Schema
+CREATE TABLE IF NOT EXISTS commitments (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id          INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+    title               TEXT NOT NULL,
+    commitment_type     TEXT NOT NULL,                  -- ASSIGNMENT | DELIVERABLE | MEETING | OBLIGATION
+    deadline_date       TEXT,                           -- ISO-8601 string
+    confidence_score    REAL NOT NULL DEFAULT 1.0,
+    source_node_id      INTEGER REFERENCES context_nodes(id) ON DELETE SET NULL,
+    status              TEXT NOT NULL DEFAULT 'OPEN',   -- OPEN | COMPLETED | ABANDONED
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Action Engine Schema
+CREATE TABLE IF NOT EXISTS project_deadlines (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id          INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+    deadline_label      TEXT NOT NULL,                  -- e.g., 'Stripe Integration'
+    target_date         TEXT NOT NULL,                  -- ISO-8601 string
+    importance_tier     TEXT NOT NULL DEFAULT 'MEDIUM', -- LOW | MEDIUM | HIGH | CRITICAL
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS project_actions (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id          INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+    action_text         TEXT NOT NULL,                  -- e.g., 'Implement Stripe webhook'
+    estimated_effort_hours REAL NOT NULL DEFAULT 1.0,   -- Used in achievability priority
+    status              TEXT NOT NULL DEFAULT 'PENDING',-- PENDING | COMPLETED | DEPRECATED
+    priority_score      REAL NOT NULL DEFAULT 0.0,
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Human Checkpoint Ground-Truth
+CREATE TABLE IF NOT EXISTS project_checkpoints (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id          INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+    accomplished_text   TEXT NOT NULL,
+    blocked_text        TEXT,
+    next_steps_text     TEXT,
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Recovery Planning Engine Schema
+CREATE TABLE IF NOT EXISTS recovery_plans (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    commitment_id       INTEGER REFERENCES commitments(id) ON DELETE CASCADE,
+    plan_payload_json   TEXT NOT NULL,                  -- Serialized chronological schedule steps
+    generated_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Autonomous Research Continuation Schema
+CREATE TABLE IF NOT EXISTS autonomous_research_briefs (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id          INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+    brief_payload_json  TEXT NOT NULL,                  -- Serialized JSON list of research elements, summaries, and links
+    generated_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Research Graph Adjacency Table
+CREATE TABLE IF NOT EXISTS graph_edges (
+    source_node_id      INTEGER REFERENCES context_nodes(id) ON DELETE CASCADE,
+    target_node_id      INTEGER REFERENCES context_nodes(id) ON DELETE CASCADE,
+    edge_type           TEXT NOT NULL,                  -- REFERENCES | GENERATED_FROM | SUPPORTS | BLOCKS | RELATED_TO | INVESTIGATES | DERIVED_FROM
+    weight              REAL NOT NULL DEFAULT 1.0,
+    created_at          TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (source_node_id, target_node_id, edge_type)
+);
+
+-- Workspace Connector Registration
+CREATE TABLE IF NOT EXISTS workspace_connector_registry (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    connector_id        TEXT UNIQUE NOT NULL,           -- VSCODE | CURSOR | WINDSURF
+    status              TEXT NOT NULL DEFAULT 'ACTIVE',
+    last_pulsed_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Explicit Physical State Snapshots for Workspace Restoration
+CREATE TABLE IF NOT EXISTS workspace_snapshots (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id          INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+    active_file_path    TEXT NOT NULL,
+    cursor_line         INTEGER NOT NULL DEFAULT 1,
+    cursor_column       INTEGER NOT NULL DEFAULT 1,
+    open_tabs_json      TEXT NOT NULL,                  -- Serialized array of open file paths
+    captured_at         TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- CCE Snapshots and Claims
+CREATE TABLE IF NOT EXISTS project_snapshots (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id          INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+    snapshot_summary    TEXT NOT NULL,
+    workspace_state_json TEXT NOT NULL,
+    generated_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS continuation_claims (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    snapshot_id         INTEGER REFERENCES project_snapshots(id) ON DELETE CASCADE,
+    claim_text          TEXT NOT NULL,
+    confidence_score    REAL NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS continuation_claim_sources (
+    claim_id            INTEGER REFERENCES continuation_claims(id) ON DELETE CASCADE,
+    node_id             INTEGER REFERENCES context_nodes(id) ON DELETE CASCADE,
+    PRIMARY KEY (claim_id, node_id)
+);
+
+-- Virtual Vector Tables for Semantic Retrieval
+CREATE VIRTUAL TABLE IF NOT EXISTS context_embeddings USING vec0(
+    node_id             INTEGER PRIMARY KEY,
+    embedding           FLOAT[384] distance_metric=cosine
+);
+
+-- Core Optimization Indices
+CREATE INDEX IF NOT EXISTS idx_ce_node ON context_events(node_id);
+CREATE INDEX IF NOT EXISTS idx_cn_proj ON context_nodes(project_id);
+CREATE INDEX IF NOT EXISTS idx_pa_proj ON project_actions(project_id, status);
+CREATE INDEX IF NOT EXISTS idx_ws_proj ON workspace_snapshots(project_id);
+CREATE INDEX IF NOT EXISTS idx_cmt_proj ON commitments(project_id, status);
+CREATE INDEX IF NOT EXISTS idx_brw_proj ON browser_sessions(project_id);
+CREATE INDEX IF NOT EXISTS idx_srch_sess ON search_queries(browser_session_id);
+
+7. Performance & Validation Metrics (North Star)
+
+7.1 Continuation Success Rate (CSR)
+
+\text{CSR} = \frac{N_{successful\_continuations}}{N_{total\_continuations\_triggered}}
+
+  - Definition of Success: The user performs \ge 15 minutes of active,
+    continuous work (logged by Workspace IDE and Browser Connector telemetry) on
+    the restored codebase or research path within 10 minutes of triggering the
+    "Start Working" action on the HUD.
+  - Target Baseline: \text{CSR} \ge 65\%.
+
+7.2 Action Completion Index (ACI)
+
+\text{ACI} = \frac{N_{completed\_priority\_actions}}{N_{active\_priority\_actions\_under\_deadline}}
+
+  - Definition: Evaluates how many critical, high-priority tasks (Priority Score
+    AP \ge 7.5 under imminent deadlines) are transitioned to completed status
+    before the deadline expires.
+  - Target Baseline: \text{ACI} \ge 80\%.
+
+7.3 Commitment Save Rate (CSR-2)
+
+\text{CSR-2} = \frac{N_{saved\_commitments}}{N_{high\_risk\_commitments}}
+
+  - Definition of Success: Evaluates how many discovered commitments that
+    entered RED health status (Health < 0.40) or triggered a Deadline Threat
+    Alert (Risk \ge 0.70) were subsequently completed and marked resolved prior
+    to the target ISO-8601 deadline.
+  - Target Baseline: \text{CSR-2} \ge 70\%.
+
+7.4 Context Recovery Time (CRT)
+
+  - Definition: The elapsed duration (seconds) between a user clicking the
+    "Start Working" action on the HUD and executing their first productive
+    workspace modifications (e.g., file edit, active browser lookup linked to
+    the restored RESEARCH_SESSION).
+  - Target Baseline: \text{CRT} < 60\text{ seconds}.
+
+8. Explicit Hackathon v1.0 Exclusions (Out of Scope)
+
+To maintain focus and feasibility during the v1.0 development cycle, the
+following parameters remain out of scope:
+
+1.  Complex Graph Computations: In-memory global graph projections, advanced
+    clustering (Leiden community algorithms), and massive node centrality
+    queries. Only lightweight primary-key traversals and direct edge queries are
+    permitted.
+2.  High-Noise Ingestion: Real-time Optical Character Recognition (OCR) engines,
+    live browser DOM scraping of non-active pages, or active watchers for
+    third-party messaging workspaces (e.g., WhatsApp Web, Slack APIs). Only
+    active tab URL/Title, file downloads, local markdown files, and direct
+    browser search query telemetry are ingested.
+3.  Autonomous Code Execution: Autonomous code generation agents, automatic Git
+    branches/commits, or external sandboxed environments. System execution ends
+    with context, browser tab layout, and editor layout reconstruction.
+4.  Cloud-Sync and Server Integrations: The architecture is restricted to
+    local-first. Cloud-backed databases, remote multi-user sync platforms, and
+    hosted vector solutions are excluded to ensure privacy and offline
+    usability.

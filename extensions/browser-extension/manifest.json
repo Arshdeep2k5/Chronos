@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Chronos Pilot Telemetry",
+  "version": "1.0.0",
+  "description": "Browser Telemetry and Research Session tracker for Chronos Pilot",
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "webNavigation"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
