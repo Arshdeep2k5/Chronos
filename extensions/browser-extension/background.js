@@ -38,6 +38,17 @@ function connectWS() {
       chrome.storage.local.set({ port: port });
     };
     
+    socket.onmessage = (event) => {
+      try {
+        let data = JSON.parse(event.data);
+        if (data.type === "DISTRACTION_INTERCEPT") {
+          injectDopamineFrictionOverlay(activeTabId);
+        }
+      } catch(e) {
+        console.error("Error parsing websocket message", e);
+      }
+    };
+
     socket.onerror = () => {
       if (!connected) {
         tryConnect(portIndex + 1);
@@ -78,7 +89,10 @@ function handleTabFocusChange(tabId) {
     activeTabId = tabId;
     activeTabStartTime = Date.now();
     
-    let urlString = tab.url || "";
+    let isPrivate = tab.incognito || false;
+    let urlString = isPrivate ? "https://private.browsing/PrivateSession" : (tab.url || "");
+    let tabTitle = isPrivate ? "Opened Private Window" : (tab.title || "");
+    
     if (!urlString || urlString.startsWith("chrome://") || urlString.startsWith("about:")) return;
     
     let url;
@@ -90,33 +104,37 @@ function handleTabFocusChange(tabId) {
     
     let domain = url.hostname;
     
-    // Privacy Guardrails (Section 4.13 & Section 3.1.3)
-    const blockedKeywords = ["login", "signin", "oauth", "password", "bank", "paypal", "checkout", "signup"];
-    if (blockedKeywords.some(kw => domain.includes(kw) || url.pathname.includes(kw))) {
-      console.log("Privacy Guard: Telemetry skipped for secure domain/URL");
-      return;
+    if (!isPrivate) {
+      // Privacy Guardrails (Section 4.13 & Section 3.1.3)
+      const blockedKeywords = ["login", "signin", "oauth", "password", "bank", "paypal", "checkout", "signup"];
+      if (blockedKeywords.some(kw => domain.includes(kw) || url.pathname.includes(kw))) {
+        console.log("Privacy Guard: Telemetry skipped for secure domain/URL");
+        return;
+      }
     }
     
     sendTelemetry({
       type: "TAB_FOCUS",
       payload: {
         url: urlString,
-        title: tab.title || "",
+        title: tabTitle,
         domain: domain,
         visit_started_at: new Date().toISOString()
       }
     });
     
-    let queryText = extractSearchQuery(url, tab.title || "");
-    if (queryText) {
-      sendTelemetry({
-        type: "SEARCH_QUERY",
-        payload: {
-          url: urlString,
-          query_text: queryText,
-          created_at: new Date().toISOString()
-        }
-      });
+    if (!isPrivate) {
+      let queryText = extractSearchQuery(url, tabTitle);
+      if (queryText) {
+        sendTelemetry({
+          type: "SEARCH_QUERY",
+          payload: {
+            url: urlString,
+            query_text: queryText,
+            created_at: new Date().toISOString()
+          }
+        });
+      }
     }
   });
 }
@@ -145,4 +163,61 @@ function sendTelemetry(msg) {
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(msg));
   }
+}
+
+function injectDopamineFrictionOverlay(tabId) {
+  if (!tabId) return;
+  chrome.scripting.executeScript({
+    target: { tabId: tabId },
+    func: () => {
+      if (document.getElementById('chronos-dopamine-overlay')) return;
+      
+      const overlay = document.createElement('div');
+      overlay.id = 'chronos-dopamine-overlay';
+      overlay.style.position = 'fixed';
+      overlay.style.top = '0';
+      overlay.style.left = '0';
+      overlay.style.width = '100vw';
+      overlay.style.height = '100vh';
+      overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+      overlay.style.color = '#fff';
+      overlay.style.zIndex = '2147483647';
+      overlay.style.display = 'flex';
+      overlay.style.flexDirection = 'column';
+      overlay.style.justifyContent = 'center';
+      overlay.style.alignItems = 'center';
+      overlay.style.fontFamily = 'monospace';
+      overlay.style.fontSize = '24px';
+      
+      const text = document.createElement('div');
+      text.innerText = 'Chronos Pilot: Dopamine Friction Triggered';
+      text.style.marginBottom = '20px';
+      text.style.color = '#f44336';
+      
+      const subText = document.createElement('div');
+      subText.innerText = 'You have an imminent commitment due in < 48 hours.';
+      subText.style.fontSize = '18px';
+      subText.style.marginBottom = '40px';
+      
+      const countdown = document.createElement('div');
+      countdown.innerText = '5';
+      countdown.style.fontSize = '48px';
+      countdown.style.fontWeight = 'bold';
+      
+      overlay.appendChild(text);
+      overlay.appendChild(subText);
+      overlay.appendChild(countdown);
+      document.body.appendChild(overlay);
+      
+      let seconds = 5;
+      const interval = setInterval(() => {
+        seconds--;
+        countdown.innerText = seconds.toString();
+        if (seconds <= 0) {
+          clearInterval(interval);
+          overlay.remove();
+        }
+      }, 1000);
+    }
+  });
 }

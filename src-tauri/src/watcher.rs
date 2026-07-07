@@ -4,7 +4,7 @@ use std::sync::mpsc::channel;
 use std::thread;
 use rusqlite::{params, Connection};
 
-pub fn start_watcher(db_path: PathBuf, paths_to_watch: Vec<PathBuf>) {
+pub fn start_watcher(db_path: PathBuf, telemetry_db_path: PathBuf, paths_to_watch: Vec<PathBuf>) {
     thread::spawn(move || {
         let (tx, rx) = channel();
         
@@ -25,7 +25,7 @@ pub fn start_watcher(db_path: PathBuf, paths_to_watch: Vec<PathBuf>) {
         for res in rx {
             match res {
                 Ok(event) => {
-                    handle_watcher_event(&db_path, event);
+                    handle_watcher_event(&db_path, &telemetry_db_path, event);
                 }
                 Err(e) => println!("watch error: {:?}", e),
             }
@@ -33,10 +33,19 @@ pub fn start_watcher(db_path: PathBuf, paths_to_watch: Vec<PathBuf>) {
     });
 }
 
-fn handle_watcher_event(db_path: &Path, event: Event) {
+fn handle_watcher_event(db_path: &Path, telemetry_db_path: &Path, event: Event) {
     if event.kind.is_create() || event.kind.is_modify() {
         for path in event.paths {
             if path.is_dir() {
+                continue;
+            }
+            
+            let file_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
+            if file_name == "cde_active_parse.json"
+                || file_name == "handshake.json"
+                || file_name.starts_with("chronos.db")
+                || file_name == "reconstruction_narrative.md"
+            {
                 continue;
             }
             
@@ -66,11 +75,13 @@ fn handle_watcher_event(db_path: &Path, event: Event) {
                     |row| row.get(0)
                 ) {
                     let event_type = if event.kind.is_create() { "CREATED" } else { "EDITED" };
-                    let _ = conn.execute(
-                        "INSERT INTO context_events (node_id, event_type, interaction_duration)
-                         VALUES (?1, ?2, 0)",
-                        params![node_id, event_type]
-                    );
+                    if let Ok(tele_conn) = Connection::open(telemetry_db_path) {
+                        let _ = tele_conn.execute(
+                            "INSERT INTO context_events (node_id, event_type, interaction_duration)
+                             VALUES (?1, ?2, 0)",
+                            params![node_id, event_type]
+                        );
+                    }
                 }
             }
         }

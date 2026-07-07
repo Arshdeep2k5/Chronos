@@ -1,0 +1,52 @@
+[package]
+name = "chronos-daemon"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "chronos-daemon"
+path = "src/main.rs"
+
+[dependencies]
+chronos-core = { path = "../chronos-core" }
+chronos-bus = { path = "../chronos-bus" }
+chronos-store = { path = "../chronos-store" }
+chronos-store-sqlite = { path = "../chronos-store-sqlite" }
+chronos-registry = { path = "../chronos-registry" }
+chronos-container = { path = "../chronos-container" }
+chronos-config = { path = "../chronos-config" }
+chronos-logging = { path = "../chronos-logging" }
+chronos-memory-entity-resolution = { path = "../chronos-memory-entity-resolution" }
+chronos-memory-sessions = { path = "../chronos-memory-sessions" }
+chronos-memory-state = { path = "../chronos-memory-state" }
+chronos-reasoning-reflection = { path = "../chronos-reasoning-reflection" }
+chronos-reasoning-commitments = { path = "../chronos-reasoning-commitments" }
+chronos-event-orchestrator = { path = "../chronos-event-orchestrator" }
+chronos-reasoning-dde = { path = "../chronos-reasoning-dde" }
+chronos-reasoning-pcm = { path = "../chronos-reasoning-pcm" }
+chronos-reasoning-risk = { path = "../chronos-reasoning-risk" }
+chronos-decision-orchestrator = { path = "../chronos-decision-orchestrator" }
+chronos-execution-cce = { path = "../chronos-execution-cce" }
+chronos-execution-orchestration = { path = "../chronos-execution-orchestration" }
+chronos-runtime-loop = { path = "../chronos-runtime-loop" }
+# ── Perception Adapters (Layer 1) ──────────────────────────────────────────────
+chronos-adapter-git = { path = "../chronos-adapter-git" }
+chronos-adapter-filewatcher = { path = "../chronos-adapter-filewatcher" }
+chronos-adapter-window-focus = { path = "../chronos-adapter-window-focus" }
+chronos-adapter-clipboard = { path = "../chronos-adapter-clipboard" }
+# ── Telemetry Bridge ────────────────────────────────────────────────────────────
+chronos-telemetry-bridge = { path = "../chronos-telemetry-bridge" }
+chronos-api-bridge = { path = "../chronos-api-bridge" }
+axum = { version = "0.8", features = ["tokio"] }
+tokio = { version = "1.37", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow = "1.0"
+dirs = "5.0"
+chrono = { version = "0.4", features = ["serde"] }
+reqwest = { version = "0.12", features = ["json"] }
+
+[dev-dependencies]
+tempfile = "3.10"

@@ -1,0 +1,6 @@
+{
+  "name": "Chronos Pilot",
+  "description": "Chronos Pilot is a Personal Execution Operating System and local-first project memory engine that proactively manages commitments, forecasts deadline failures, generates recovery plans, and reconstructs active workspaces.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

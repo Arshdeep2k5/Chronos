@@ -18,3 +18,8 @@ uuid = { version = "1.6", features = ["v4"] }
 rand = "0.8"
 chrono = { version = "0.4", features = ["serde"] }
 sysinfo = "0.30"
+dirs = "6.0.0"
+reqwest = { version = "0.12", features = ["json"] }
+
+[build-dependencies]
+tauri-build = "1.5"

@@ -4,7 +4,7 @@ use std::thread;
 use std::time::Duration;
 use rusqlite::{params, Connection};
 
-pub fn start_window_focus_loop(db_path: PathBuf) {
+pub fn start_window_focus_loop(db_path: PathBuf, telemetry_db_path: PathBuf) {
     thread::spawn(move || {
         let mut last_window_title = String::new();
         let mut last_app_name = String::new();
@@ -14,20 +14,28 @@ pub fn start_window_focus_loop(db_path: PathBuf) {
             
             if let Ok(active_window) = get_active_window() {
                 let app_name = active_window.app_name;
-                let title = active_window.title;
+                let mut title = active_window.title;
+                
+                let title_lower = title.to_lowercase();
+                if title_lower.contains("incognito") 
+                    || title_lower.contains("inprivate") 
+                    || title_lower.contains("private browsing") 
+                {
+                    title = "Opened Private Window".to_string();
+                }
                 
                 if app_name != last_app_name || title != last_window_title {
                     last_app_name = app_name.clone();
                     last_window_title = title.clone();
                     
-                    log_window_focus(&db_path, &app_name, &title);
+                    log_window_focus(&db_path, &telemetry_db_path, &app_name, &title);
                 }
             }
         }
     });
 }
 
-fn log_window_focus(db_path: &PathBuf, app_name: &str, title: &str) {
+fn log_window_focus(db_path: &PathBuf, telemetry_db_path: &PathBuf, app_name: &str, title: &str) {
     let entity_key = format!("APP:{}:{}", app_name, title);
     let display_name = format!("{} - {}", app_name, title);
     
@@ -44,11 +52,13 @@ fn log_window_focus(db_path: &PathBuf, app_name: &str, title: &str) {
             params![entity_key],
             |row| row.get(0)
         ) {
-            let _ = conn.execute(
-                "INSERT INTO context_events (node_id, event_type, interaction_duration)
-                 VALUES (?1, 'TAB_FOCUS', 1)",
-                params![node_id]
-            );
+            if let Ok(tele_conn) = Connection::open(telemetry_db_path) {
+                let _ = tele_conn.execute(
+                    "INSERT INTO context_events (node_id, event_type, interaction_duration)
+                     VALUES (?1, 'TAB_FOCUS', 1)",
+                    params![node_id]
+                );
+            }
         }
     }
 }

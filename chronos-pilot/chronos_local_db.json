@@ -1,0 +1,319 @@
+{
+  "projects": [
+    {
+      "id": 1,
+      "project_name": "ML Coursework Assignment",
+      "status": "ACTIVE",
+      "created_at": "2026-06-09T10:00:00Z"
+    },
+    {
+      "id": 2,
+      "project_name": "Stripe Billing Integration",
+      "status": "ACTIVE",
+      "created_at": "2026-05-24T10:00:00Z"
+    }
+  ],
+  "projectState": [
+    {
+      "project_id": 1,
+      "current_summary": "Developing an end-to-end Retrieval-Augmented Generation (RAG) chunking pipeline for custom academic documents.",
+      "current_entry_point": "notebooks/rag_eval.ipynb",
+      "next_action": "Train local classifier & run baseline",
+      "confidence_score": 0.92,
+      "updated_at": "2026-06-23T10:15:00-07:00"
+    },
+    {
+      "project_id": 2,
+      "current_summary": "Wiring local API handlers to handle custom Stripe billing plan subscriptions and webhook notifications safely.",
+      "current_entry_point": "src/billing/stripe_webhook.ts",
+      "next_action": "Implement Stripe signature validation verification",
+      "confidence_score": 0.88,
+      "updated_at": "2026-06-23T10:15:00-07:00"
+    }
+  ],
+  "contextNodes": [
+    {
+      "id": 1,
+      "project_id": 1,
+      "entity_key": "FILE:notebooks/rag_eval.ipynb",
+      "entity_type": "FILE",
+      "display_name": "rag_eval.ipynb",
+      "created_at": "2026-06-09T10:15:00Z"
+    },
+    {
+      "id": 2,
+      "project_id": 1,
+      "entity_key": "FILE:data/assignment_prompt.md",
+      "entity_type": "FILE",
+      "display_name": "assignment_prompt.md",
+      "created_at": "2026-06-09T10:20:00Z"
+    },
+    {
+      "id": 3,
+      "project_id": 1,
+      "entity_key": "URL:https://arxiv.org/abs/2005.11401",
+      "entity_type": "URL",
+      "display_name": "Retrieval-Augmented Generation Paper",
+      "created_at": "2026-06-15T14:30:00Z"
+    },
+    {
+      "id": 4,
+      "project_id": 2,
+      "entity_key": "FILE:src/billing/stripe_webhook.ts",
+      "entity_type": "FILE",
+      "display_name": "stripe_webhook.ts",
+      "created_at": "2026-05-24T11:00:00Z"
+    },
+    {
+      "id": 5,
+      "project_id": 2,
+      "entity_key": "FILE:package.json",
+      "entity_type": "FILE",
+      "display_name": "package.json",
+      "created_at": "2026-05-24T10:05:00Z"
+    },
+    {
+      "id": 6,
+      "project_id": 2,
+      "entity_key": "URL:https://docs.stripe.com/webhooks/signatures",
+      "entity_type": "URL",
+      "display_name": "Stripe Webhook Signatures Docs",
+      "created_at": "2026-06-20T10:15:00Z"
+    }
+  ],
+  "contextEvents": [
+    {
+      "id": 1,
+      "node_id": 1,
+      "event_type": "EDITED",
+      "interaction_duration": 1200,
+      "captured_at": "2026-06-20T14:00:00Z"
+    },
+    {
+      "id": 2,
+      "node_id": 2,
+      "event_type": "OPENED",
+      "interaction_duration": 300,
+      "captured_at": "2026-06-20T14:20:00Z"
+    },
+    {
+      "id": 3,
+      "node_id": 3,
+      "event_type": "TAB_FOCUS",
+      "interaction_duration": 900,
+      "captured_at": "2026-06-21T09:30:00Z"
+    },
+    {
+      "id": 4,
+      "node_id": 4,
+      "event_type": "EDITED",
+      "interaction_duration": 2400,
+      "captured_at": "2026-06-20T11:00:00Z"
+    },
+    {
+      "id": 5,
+      "node_id": 6,
+      "event_type": "TAB_FOCUS",
+      "interaction_duration": 1500,
+      "captured_at": "2026-06-20T11:40:00Z"
+    },
+    {
+      "id": 6,
+      "node_id": 1,
+      "event_type": "OPENED",
+      "interaction_duration": 60,
+      "captured_at": "2026-06-23T10:15:00-07:00"
+    }
+  ],
+  "browserSessions": [
+    {
+      "id": 1,
+      "project_id": 2,
+      "url": "https://docs.stripe.com/webhooks/signatures",
+      "page_title": "Webhook Signatures | Stripe Documentation",
+      "domain": "docs.stripe.com",
+      "visit_started_at": "2026-06-20T11:10:00Z",
+      "visit_ended_at": "2026-06-20T11:35:00Z",
+      "active_seconds": 1500,
+      "created_at": "2026-06-20T11:10:00Z"
+    }
+  ],
+  "searchQueries": [
+    {
+      "id": 1,
+      "browser_session_id": 1,
+      "query_text": "stripe webhook local signature test failure",
+      "created_at": "2026-06-20T11:12:00Z"
+    }
+  ],
+  "commitments": [
+    {
+      "id": 1,
+      "project_id": 1,
+      "title": "Machine Learning Coursework",
+      "commitment_type": "ASSIGNMENT",
+      "deadline_date": "2026-07-15T23:59:59Z",
+      "confidence_score": 0.92,
+      "source_node_id": 2,
+      "status": "OPEN",
+      "created_at": "2026-06-09T10:20:00Z"
+    },
+    {
+      "id": 2,
+      "project_id": 2,
+      "title": "Stripe Webhook Verification Release",
+      "commitment_type": "DELIVERABLE",
+      "deadline_date": "2026-06-25T18:00:00Z",
+      "confidence_score": 0.88,
+      "source_node_id": 6,
+      "status": "OPEN",
+      "created_at": "2026-05-24T11:00:00Z"
+    }
+  ],
+  "projectDeadlines": [
+    {
+      "id": 1,
+      "project_id": 1,
+      "deadline_label": "ML Assignment Final Submission",
+      "target_date": "2026-07-15T23:59:59Z",
+      "importance_tier": "HIGH",
+      "created_at": "2026-06-09T10:00:00Z"
+    },
+    {
+      "id": 2,
+      "project_id": 2,
+      "deadline_label": "Stripe Billing Production Deployment",
+      "target_date": "2026-06-25T18:00:00Z",
+      "importance_tier": "CRITICAL",
+      "created_at": "2026-05-24T10:00:00Z"
+    }
+  ],
+  "projectActions": [
+    {
+      "id": 1,
+      "project_id": 1,
+      "action_text": "Complete literature review & parse inputs",
+      "estimated_effort_hours": 3.5,
+      "status": "PENDING",
+      "priority_score": 2.88,
+      "created_at": "2026-06-09T10:30:00Z",
+      "why_now_diagnostics": [
+        "Quick win: highly achievable task (estimated 3.5 hrs)"
+      ]
+    },
+    {
+      "id": 2,
+      "project_id": 1,
+      "action_text": "Train local classifier & run baseline",
+      "estimated_effort_hours": 4,
+      "status": "PENDING",
+      "priority_score": 2.88,
+      "created_at": "2026-06-09T10:30:00Z",
+      "why_now_diagnostics": [
+        "Quick win: highly achievable task (estimated 4 hrs)"
+      ]
+    },
+    {
+      "id": 3,
+      "project_id": 1,
+      "action_text": "Finalize report writing & export PDFs",
+      "estimated_effort_hours": 2.5,
+      "status": "PENDING",
+      "priority_score": 2.89,
+      "created_at": "2026-06-09T10:30:00Z",
+      "why_now_diagnostics": [
+        "Quick win: highly achievable task (estimated 2.5 hrs)"
+      ]
+    },
+    {
+      "id": 4,
+      "project_id": 2,
+      "action_text": "Implement Stripe signature validation verification",
+      "estimated_effort_hours": 5.5,
+      "status": "PENDING",
+      "priority_score": 5.38,
+      "created_at": "2026-05-24T11:15:00Z",
+      "why_now_diagnostics": [
+        "Deadline is imminent (under 2.0 days remaining)",
+        "Quick win: highly achievable task (estimated 5.5 hrs)"
+      ]
+    },
+    {
+      "id": 5,
+      "project_id": 2,
+      "action_text": "Test webhooks locally using Stripe CLI sandbox",
+      "estimated_effort_hours": 2,
+      "status": "PENDING",
+      "priority_score": 5.41,
+      "created_at": "2026-05-24T11:15:00Z",
+      "why_now_diagnostics": [
+        "Deadline is imminent (under 2.0 days remaining)",
+        "Quick win: highly achievable task (estimated 2 hrs)"
+      ]
+    }
+  ],
+  "projectCheckpoints": [
+    {
+      "id": 1,
+      "project_id": 1,
+      "accomplished_text": "Parsed raw prompt guidelines and set up a basic token-splitter notebook.",
+      "blocked_text": "Experiencing unstable index retrieval and high latency during multi-vector search database loops.",
+      "next_steps_text": "Investigate alternative chunking/splitting strategies and evaluate embeddings on local test datasets.",
+      "created_at": "2026-06-20T15:00:00Z"
+    },
+    {
+      "id": 2,
+      "project_id": 2,
+      "accomplished_text": "Implemented basic express server routing to receive Stripe JSON post webhook payloads.",
+      "blocked_text": "Stuck trying to mock Stripe webhook signatures locally to test verification middleware safely without calling remote servers.",
+      "next_steps_text": "Find documentation or solutions for verifying webhooks in local offline test suites.",
+      "created_at": "2026-06-20T12:00:00Z"
+    }
+  ],
+  "recoveryPlans": [],
+  "autonomousResearchBriefs": [],
+  "graphEdges": [
+    {
+      "source_node_id": 1,
+      "target_node_id": 2,
+      "edge_type": "REFERENCES",
+      "weight": 1.5,
+      "created_at": "2026-06-09T10:20:00Z"
+    },
+    {
+      "source_node_id": 1,
+      "target_node_id": 3,
+      "edge_type": "DERIVED_FROM",
+      "weight": 1,
+      "created_at": "2026-06-15T14:30:00Z"
+    },
+    {
+      "source_node_id": 4,
+      "target_node_id": 6,
+      "edge_type": "INVESTIGATES",
+      "weight": 2,
+      "created_at": "2026-06-20T11:00:00Z"
+    }
+  ],
+  "workspaceSnapshots": [
+    {
+      "id": 1,
+      "project_id": 1,
+      "active_file_path": "notebooks/rag_eval.ipynb",
+      "cursor_line": 15,
+      "cursor_column": 2,
+      "open_tabs_json": "[\"notebooks/rag_eval.ipynb\",\"data/assignment_prompt.md\"]",
+      "captured_at": "2026-06-20T14:30:00Z"
+    },
+    {
+      "id": 2,
+      "project_id": 2,
+      "active_file_path": "src/billing/stripe_webhook.ts",
+      "cursor_line": 42,
+      "cursor_column": 12,
+      "open_tabs_json": "[\"package.json\",\"src/billing/stripe_webhook.ts\"]",
+      "captured_at": "2026-06-20T11:45:00Z"
+    }
+  ],
+  "deadLetterQueue": []
+}

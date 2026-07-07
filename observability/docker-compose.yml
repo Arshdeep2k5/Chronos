@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  chronos-daemon:
+    build:
+      context: ..
+      dockerfile: Dockerfile.daemon
+    container_name: chronos-daemon
+    ports:
+      - "7899:7899"
+    volumes:
+      - chronos-data:/app/data
+    environment:
+      - CHRONOS_API_PORT=7899
+      - ENABLE_EXTERNAL_OBSERVABILITY=true
+      - ENABLE_EXTERNAL_OBSERVABILITY_VERBOSE=true
+
+  chronos-pilot:
+    build:
+      context: ../chronos-pilot
+      dockerfile: Dockerfile
+    container_name: chronos-pilot
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - CHRONOS_API_HOST=chronos-daemon
+      - NODE_ENV=production
+    depends_on:
+      - chronos-daemon
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: chronos-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - chronos-daemon
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: chronos-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+
+volumes:
+  chronos-data:

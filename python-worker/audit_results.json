@@ -1,0 +1,413 @@
+{
+  "0_purge": {
+    "success": true,
+    "message": "System purged successfully. Baseline data re-seeded."
+  },
+  "1_system_status_initial": {
+    "status": "ONLINE",
+    "systemTime": "2026-06-24T20:19:17.457526+05:30",
+    "hasApiKey": false,
+    "databaseDiskSizeKb": 848,
+    "privacyMode": "LOCAL_ONLY_ZERO_CLOUD"
+  },
+  "2_download_pdf": {
+    "success": true,
+    "discovered_commitment": {
+      "id": 2,
+      "project_id": 1,
+      "title": "ML Theoretical Foundations Assignment",
+      "commitment_type": "ASSIGNMENT",
+      "deadline_date": "2026-07-20T23:59:59Z",
+      "confidence_score": 0.94,
+      "source_node_id": 3306,
+      "status": "OPEN",
+      "created_at": "2026-06-24T20:19:17.457526+05:30"
+    },
+    "discovered_node": {
+      "id": 3306,
+      "project_id": 1,
+      "entity_key": "FILE:downloads/Advanced_Deep_Learning_Final_Paper.pdf",
+      "entity_type": "DOCUMENT",
+      "display_name": "Advanced_Deep_Learning_Final_Paper.pdf"
+    },
+    "message": "CDE processed document: Discovered commitment: 'ML Theoretical Foundations' due July 20 (Conf: 94%)"
+  },
+  "3_browser_search": [
+    {
+      "success": true,
+      "message": "Browser Telemetry tracked search query: \"how to build stripe webhook signatures validation in ts\" | Dynamic Graph Edge generated."
+    },
+    {
+      "success": true,
+      "message": "Browser Telemetry tracked search query: \"unstable token embeddings index in langchain vec0 sqlite\" | Dynamic Graph Edge generated."
+    }
+  ],
+  "4_commitments_before_time_travel": [
+    {
+      "id": 2,
+      "project_id": 1,
+      "title": "ML Theoretical Foundations Assignment",
+      "commitment_type": "ASSIGNMENT",
+      "deadline_date": "2026-07-20T23:59:59Z",
+      "confidence_score": 0.94,
+      "source_node_id": 3306,
+      "status": "OPEN",
+      "created_at": "2026-06-24T20:19:17.457526+05:30",
+      "health": "RED",
+      "risk_score": 0.09,
+      "completion_chance": 100.0,
+      "simulated_failure_date": "2026-06-26",
+      "marginal_loss_24h": 0.01
+    }
+  ],
+  "4_actions_before_time_travel": [
+    {
+      "id": 2,
+      "project_id": 1,
+      "action_text": "Complete ML math calculations section",
+      "estimated_effort_hours": 4.5,
+      "status": "PENDING",
+      "priority_score": 1.5,
+      "created_at": "2026-06-24T20:19:17.457526+05:30",
+      "why_now_diagnostics": [
+        "Project progress has stalled (zero focus detected recently)",
+        "Quick win: highly achievable task (estimated 4.5 hrs)"
+      ]
+    }
+  ],
+  "5_time_travel_72h": {
+    "success": true,
+    "newTime": "2026-06-27T20:19:17.457526+05:30",
+    "message": "Time traveled forward 72 hours."
+  },
+  "6_commitments_after_time_travel": [
+    {
+      "id": 2,
+      "project_id": 1,
+      "title": "ML Theoretical Foundations Assignment",
+      "commitment_type": "ASSIGNMENT",
+      "deadline_date": "2026-07-20T23:59:59Z",
+      "confidence_score": 0.94,
+      "source_node_id": 3306,
+      "status": "OPEN",
+      "created_at": "2026-06-24T20:19:17.457526+05:30",
+      "health": "RED",
+      "risk_score": 1.93,
+      "completion_chance": 0.0,
+      "simulated_failure_date": "2026-10-18",
+      "marginal_loss_24h": 0.0
+    }
+  ],
+  "6_actions_after_time_travel": [
+    {
+      "id": 2,
+      "project_id": 1,
+      "action_text": "Complete ML math calculations section",
+      "estimated_effort_hours": 4.5,
+      "status": "PENDING",
+      "priority_score": 1.8,
+      "created_at": "2026-06-24T20:19:17.457526+05:30",
+      "why_now_diagnostics": [
+        "Project progress has stalled (zero focus detected recently)",
+        "Quick win: highly achievable task (estimated 4.5 hrs)"
+      ]
+    }
+  ],
+  "6_system_status_after_time_travel": {
+    "status": "ONLINE",
+    "systemTime": "2026-06-27T20:19:17.457526+05:30",
+    "hasApiKey": false,
+    "databaseDiskSizeKb": 848,
+    "privacyMode": "LOCAL_ONLY_ZERO_CLOUD"
+  },
+  "7_generate_plan": {
+    "success": true,
+    "plan": {
+      "id": 1,
+      "commitment_id": 2,
+      "plan_payload_json": "[{\"day\":\"[Today]\",\"task\":\"Complete ML math calculations section\",\"hours\":4.5}]",
+      "generated_at": "2026-06-27T20:19:17.457526+05:30"
+    }
+  },
+  "8_restore_workspace": {
+    "success": true,
+    "snapshot": null,
+    "why_stopped_narrative": "**Likely Stopping Point:** You were likely blocked on: None\r\n\r\n**Final Activity Window:**\r\n- Final open file: `None` (Line 0)\r\n- Final search query: \"unstable token embeddings index in langchain vec0 sqlite\"\r\n- Last checkpoint blocker: \"None\"\r\n\r\n**Context Nodes:**\r\n- cde_active_parse.json\r\n- reconstruction_narrative.md\r\n- Google Search: \"unstable token embeddings index in langchain vec0 sqlite\"\r\n- Google Search: \"how to build stripe webhook signatures validation in ts\"\r\n- Advanced_Deep_Learning_Final_Paper.pdf\r\n",
+    "message": "Restored environment: Opened workspace folder, loaded tabs, positioned cursor."
+  },
+  "9_arc_briefs": [
+    {
+      "id": 1,
+      "title": "Optimal Chunking Strategies for RAG Pipelines",
+      "source": "arXiv:2403.11024",
+      "similarity": "94%",
+      "summary": "Establishes a baseline for multi-vector document splitting. Suggests recursive token splitters combined with overlap padding (+18% retrieval recall improvement).",
+      "link": "https://arxiv.org/abs/2403.11024"
+    },
+    {
+      "id": 2,
+      "title": "Stripe Webhooks Signature Mock Testing in Offline Node environments",
+      "source": "Stripe Developers Community",
+      "similarity": "89%",
+      "summary": "Details how to generate mock Stripe signature headers locally by using the Stripe API library to sign custom test payloads with the endpoint webhook secret.",
+      "link": "https://docs.stripe.com/webhooks/signatures"
+    }
+  ],
+  "10_db_inspection": {
+    "projects": [
+      {
+        "id": 1,
+        "project_name": "Chronos Pilot Project",
+        "status": "ACTIVE",
+        "created_at": "2026-06-24 14:49:17"
+      }
+    ],
+    "projectState": [],
+    "contextNodes": [
+      {
+        "id": 3306,
+        "project_id": 1,
+        "entity_key": "FILE:downloads/Advanced_Deep_Learning_Final_Paper.pdf",
+        "entity_type": "DOCUMENT",
+        "display_name": "Advanced_Deep_Learning_Final_Paper.pdf",
+        "created_at": "2026-06-24T20:19:17.457526+05:30"
+      },
+      {
+        "id": 3307,
+        "project_id": 1,
+        "entity_key": "URL:search?q=how to build stripe webhook signatures validation in ts",
+        "entity_type": "URL",
+        "display_name": "Google Search: \"how to build stripe webhook signatures validation in ts\"",
+        "created_at": "2026-06-24T20:19:17.457526+05:30"
+      },
+      {
+        "id": 3308,
+        "project_id": 1,
+        "entity_key": "URL:search?q=unstable token embeddings index in langchain vec0 sqlite",
+        "entity_type": "URL",
+        "display_name": "Google Search: \"unstable token embeddings index in langchain vec0 sqlite\"",
+        "created_at": "2026-06-24T20:19:17.457526+05:30"
+      },
+      {
+        "id": 3309,
+        "project_id": 1,
+        "entity_key": "DOCUMENT:C:\\Users\\arshd\\.config\\chronos\\reconstruction_narrative.md",
+        "entity_type": "DOCUMENT",
+        "display_name": "reconstruction_narrative.md",
+        "created_at": "2026-06-24 14:49:44"
+      },
+      {
+        "id": 3312,
+        "project_id": 1,
+        "entity_key": "FILE:C:\\Users\\arshd\\.config\\chronos\\cde_active_parse.json",
+        "entity_type": "FILE",
+        "display_name": "cde_active_parse.json",
+        "created_at": "2026-06-24 14:49:44"
+      }
+    ],
+    "contextEvents": [
+      {
+        "id": 3303,
+        "node_id": 3309,
+        "event_type": "EDITED",
+        "interaction_duration": 0,
+        "captured_at": "2026-06-24 14:49:29"
+      },
+      {
+        "id": 3304,
+        "node_id": 3309,
+        "event_type": "EDITED",
+        "interaction_duration": 0,
+        "captured_at": "2026-06-24 14:49:29"
+      },
+      {
+        "id": 3305,
+        "node_id": 3309,
+        "event_type": "EDITED",
+        "interaction_duration": 0,
+        "captured_at": "2026-06-24 14:49:29"
+      },
+      {
+        "id": 3306,
+        "node_id": 3312,
+        "event_type": "CREATED",
+        "interaction_duration": 0,
+        "captured_at": "2026-06-24 14:49:34"
+      },
+      {
+        "id": 3307,
+        "node_id": 3312,
+        "event_type": "EDITED",
+        "interaction_duration": 0,
+        "captured_at": "2026-06-24 14:49:34"
+      },
+      {
+        "id": 3308,
+        "node_id": 3309,
+        "event_type": "EDITED",
+        "interaction_duration": 0,
+        "captured_at": "2026-06-24 14:49:34"
+      },
+      {
+        "id": 3309,
+        "node_id": 3309,
+        "event_type": "EDITED",
+        "interaction_duration": 0,
+        "captured_at": "2026-06-24 14:49:34"
+      },
+      {
+        "id": 3310,
+        "node_id": 3309,
+        "event_type": "EDITED",
+        "interaction_duration": 0,
+        "captured_at": "2026-06-24 14:49:34"
+      },
+      {
+        "id": 3311,
+        "node_id": 3312,
+        "event_type": "CREATED",
+        "interaction_duration": 0,
+        "captured_at": "2026-06-24 14:49:39"
+      },
+      {
+        "id": 3312,
+        "node_id": 3312,
+        "event_type": "EDITED",
+        "interaction_duration": 0,
+        "captured_at": "2026-06-24 14:49:39"
+      },
+      {
+        "id": 3313,
+        "node_id": 3312,
+        "event_type": "EDITED",
+        "interaction_duration": 0,
+        "captured_at": "2026-06-24 14:49:39"
+      },
+      {
+        "id": 3314,
+        "node_id": 3309,
+        "event_type": "EDITED",
+        "interaction_duration": 0,
+        "captured_at": "2026-06-24 14:49:39"
+      },
+      {
+        "id": 3315,
+        "node_id": 3309,
+        "event_type": "EDITED",
+        "interaction_duration": 0,
+        "captured_at": "2026-06-24 14:49:39"
+      },
+      {
+        "id": 3316,
+        "node_id": 3312,
+        "event_type": "CREATED",
+        "interaction_duration": 0,
+        "captured_at": "2026-06-24 14:49:44"
+      },
+      {
+        "id": 3317,
+        "node_id": 3312,
+        "event_type": "EDITED",
+        "interaction_duration": 0,
+        "captured_at": "2026-06-24 14:49:44"
+      },
+      {
+        "id": 3318,
+        "node_id": 3309,
+        "event_type": "EDITED",
+        "interaction_duration": 0,
+        "captured_at": "2026-06-24 14:49:44"
+      },
+      {
+        "id": 3319,
+        "node_id": 3309,
+        "event_type": "EDITED",
+        "interaction_duration": 0,
+        "captured_at": "2026-06-24 14:49:44"
+      },
+      {
+        "id": 3320,
+        "node_id": 3309,
+        "event_type": "EDITED",
+        "interaction_duration": 0,
+        "captured_at": "2026-06-24 14:49:44"
+      }
+    ],
+    "browserSessions": [
+      {
+        "id": 4,
+        "project_id": 1,
+        "url": "https://www.google.com/search?q=how to build stripe webhook signatures validation in ts",
+        "page_title": "Google Search: how to build stripe webhook signatures validation in ts",
+        "domain": "google.com",
+        "visit_started_at": "2026-06-24T20:19:17.457526+05:30",
+        "visit_ended_at": "2026-06-24T20:19:17.457526+05:30",
+        "active_seconds": 45,
+        "created_at": "2026-06-24T20:19:17.457526+05:30"
+      },
+      {
+        "id": 5,
+        "project_id": 1,
+        "url": "https://www.google.com/search?q=unstable token embeddings index in langchain vec0 sqlite",
+        "page_title": "Google Search: unstable token embeddings index in langchain vec0 sqlite",
+        "domain": "google.com",
+        "visit_started_at": "2026-06-24T20:19:17.457526+05:30",
+        "visit_ended_at": "2026-06-24T20:19:17.457526+05:30",
+        "active_seconds": 45,
+        "created_at": "2026-06-24T20:19:17.457526+05:30"
+      }
+    ],
+    "searchQueries": [
+      {
+        "id": 4,
+        "browser_session_id": 4,
+        "query_text": "how to build stripe webhook signatures validation in ts",
+        "created_at": "2026-06-24T20:19:17.457526+05:30"
+      },
+      {
+        "id": 5,
+        "browser_session_id": 5,
+        "query_text": "unstable token embeddings index in langchain vec0 sqlite",
+        "created_at": "2026-06-24T20:19:17.457526+05:30"
+      }
+    ],
+    "commitments": [
+      {
+        "id": 2,
+        "project_id": 1,
+        "title": "ML Theoretical Foundations Assignment",
+        "commitment_type": "ASSIGNMENT",
+        "deadline_date": "2026-07-20T23:59:59Z",
+        "confidence_score": 0.94,
+        "source_node_id": 3306,
+        "status": "OPEN",
+        "created_at": "2026-06-24T20:19:17.457526+05:30"
+      }
+    ],
+    "projectDeadlines": [],
+    "projectActions": [
+      {
+        "id": 2,
+        "project_id": 1,
+        "action_text": "Complete ML math calculations section",
+        "estimated_effort_hours": 4.5,
+        "status": "PENDING",
+        "priority_score": 1.5,
+        "created_at": "2026-06-24T20:19:17.457526+05:30"
+      }
+    ],
+    "projectCheckpoints": [],
+    "recoveryPlans": [
+      {
+        "id": 1,
+        "commitment_id": 2,
+        "plan_payload_json": "[{\"day\":\"[Today]\",\"task\":\"Complete ML math calculations section\",\"hours\":4.5}]",
+        "generated_at": "2026-06-27T20:19:17.457526+05:30"
+      }
+    ],
+    "autonomousResearchBriefs": [],
+    "graphEdges": [],
+    "workspaceSnapshots": [],
+    "deadLetterQueue": []
+  }
+}

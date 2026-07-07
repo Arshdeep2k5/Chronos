@@ -19,7 +19,7 @@ def extract_text_from_pdf(file_path):
             with open(file_path, 'rb') as f:
                 content = f.read()
                 # strip non-ascii characters to get printable text
-                return "".join(chr(c) for c in content if 32 <= c < 127 || c in (10, 13))
+                return "".join(chr(c) for c in content if 32 <= c < 127 or c in (10, 13))
         except Exception:
             return ""
     try:
@@ -105,14 +105,37 @@ def parse_commitments(file_path):
         elif "exam" in text_lower or "quiz" in text_lower or "test" in text_lower:
             commitment_type = "OBLIGATION"
             
-        # Clean title name from file
-        title_clean = os.path.splitext(title)[0].replace("_", " ").replace("-", " ")
-        
+        # T-Shirt Sizing Heuristics based on document type and word count
+        word_count = len(text.split())
+        ext = os.path.splitext(file_path)[1].lower()
+        effort = 2.5 # Default to M
+        if ext == '.pdf':
+            # assume 300 words per page
+            pages = max(1, word_count // 300)
+            if pages <= 2:
+                effort = 2.5 # M
+            elif pages <= 5:
+                effort = 4.0 
+            elif pages <= 10:
+                effort = 6.0 # L
+            else:
+                effort = 12.0 # XL
+        else:
+            if word_count < 500:
+                effort = 1.0 # S
+            elif word_count < 2000:
+                effort = 2.5 # M
+            elif word_count < 5000:
+                effort = 6.0 # L
+            else:
+                effort = 12.0 # XL
+                
         commitments.append({
             "title": title_clean,
             "commitment_type": commitment_type,
             "deadline_date": normalized_deadline,
-            "confidence_score": confidence_score
+            "confidence_score": confidence_score,
+            "estimated_effort_hours": effort
         })
 
     return commitments

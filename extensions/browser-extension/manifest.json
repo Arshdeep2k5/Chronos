@@ -6,7 +6,12 @@
   "permissions": [
     "tabs",
     "activeTab",
-    "webNavigation"
+    "webNavigation",
+    "scripting"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
   ],
   "background": {
     "service_worker": "background.js"

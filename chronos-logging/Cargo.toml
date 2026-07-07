@@ -1,0 +1,16 @@
+[package]
+name = "chronos-logging"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "1.0"
+tokio = { version = "1.37", features = ["sync", "macros", "rt"] }
+
+[dev-dependencies]
+tokio = { version = "1.37", features = ["rt-multi-thread"] }

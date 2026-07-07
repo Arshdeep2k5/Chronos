@@ -1,0 +1,2204 @@
+Software Requirements Specification (SRS)
+
+Chronos Pilot (v3.0) — Cognitive Context Operating System Baseline
+
+Document Reference: CP-SRS-2026-V3.0-RELEASE
+Status: 🔒 Core Systems Architecture Baseline Frozen
+Date: June 23, 2026
+
+Change Register — Evolution from v2.6 to v3.0
+
+| Revision | Section Affected   | Origin / Context     | Severity   | Summary of Changes                                                                                                                                                                                            |
+| :------- | :----------------- | :------------------- | :--------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **v2.6** | Core Architecture  | Structural Topology  | 🔴 Critical | Inverted primary data model to Inherited Context Nodes. Introduced Project Supergraph Layer. Expanded snapshots with cognitive parameters and workspace state capture.                                        |
+| **v3.0** | Core Architecture  | Strategic Alignment  | 🔴 Critical | **Redesigned from Task-Centric to Context-Centric.** Repositioned system from a passive assistant to a local Context Operating System.                                                                        |
+| **v3.0** | Section 1.3        | Product Vision       | 🔴 Critical | **Reframed Core Vision Statement.** Redefined Chronos Pilot as a local context-reconstruction daemon with an ambient desktop companion interface.                                                             |
+| **v3.0** | Section 3 (FR-2.4) | Data Modeling Shift  | 🔴 Critical | **Introduced Project Supergraph Layer.** Replaced strict community partitions with user-facing Projects that group multiple Leiden communities dynamically.                                                   |
+| **v3.0** | Section 3 (FR-5.2) | CCE Execution        | 🔴 Critical | **Refined CCE into Dual Execution Modes.** Differentiated Mode A (Passive Background Assistance) and Mode B (Explicit Project State Reconstruction).                                                          |
+| **v3.0** | Section 5 (DDL)    | Schema Normalization | 🟠 High     | **Expanded `project_snapshots` table.** Integrated cognitive tracking parameters (objectives, next entry point, and active workspace configurations).                                                         |
+| **v3.0** | Section 3 (FR-1.6) | Ingestion Durability | 🟠 High     | **Added Ingestion Fingerprint Versioning.** Tracks adapter versions, DOM signatures, and failure rates to manage web layout drift.                                                                            |
+| **v2.7** | Section 4 (NFR-1)  | Privacy / Security   | 🔴 Critical | **Added Workspace Sensitivity Classifier (WSC).** Formulated automatic regex-based redaction of credentials prior to database writing.                                                                        |
+| **v2.7** | Section 5 (DDL)    | Schema Durability    | 🟠 High     | **Upgraded SQLite Schema.** Integrated migration, model registry, community metric, and snapshot lineage tracking tables.                                                                                     |
+| **v3.0** | Section 1.3 & 3    | Architectural Pivot  | 🔴 Critical | **Replaced Project-Centric with Commitment-Centric Hierarchy.** Established *Commitments* as the primary relational system entity. Projects are optional container supergraphs mapping groups of commitments. |
+| **v3.0** | Section 3 (FR-1.7) | Ingestion Layer      | 🔴 Critical | **Introduced Opportunity Detection Engine (ODE).** Scans passive text streams and local file system drops to discover potential untracked commitment and project opportunities.                               |
+| **v3.0** | Section 3 (FR-3.5) | Extraction Logic     | 🔴 Critical | **Introduced Deadline & Commitment Discovery Engine (DDE).** Identifies dates, deadlines, and deliverables in unstructured files or communications to populate discovery candidate registries.                |
+| **v3.0** | Section 3 (FR-4.4) | Capacity Modeling    | 🔴 Critical | **Introduced Personal Capacity Model (PCM).** Replaced static estimations with dynamic modeling tracking average coding/writing velocity, interruption frequency, and focus availability profiles.            |
+| **v3.0** | Section 3 (FR-4.6) | Schedule Adjustments | 🟠 High     | **Introduced Schedule Drift Engine (SDE) / Schedule Collapse Recovery.** Detects user-absence intervals and automatically recomputes feasibility, reforecasting completion timelines.                         |
+| **v3.0** | Section 3 (FR-6.6) | Autonomous Prep      | 🟠 High     | **Introduced Autonomous Research Continuation (ARC).** Allows local background agents to execute research missions during system idle time, staging drafts inside sandboxed staging folders.                  |
+| **v3.0** | Section 3 (FR-7.5) | User Interface       | 🟠 High     | **Introduced Deliverability Warning Cards.** Added completion probability indicators ($P(\text{success})$) directly on the HUD sidebar.                                                                       |
+
+1. Problem Statement & Product Vision
+
+1.1 The Context Fragmentation & "Read-and-Forget" Loop
+
+Modern knowledge work is distributed across disconnected interfaces (ChatGPT,
+Claude, Gemini, Perplexity), local directories, communication channels
+(WhatsApp, email), and browser tabs.
+
+The dominant user pattern is the "Read-and-Forget" Loop:
+
+1.  The user receives or views an unstructured task, assignment PDF, client
+    instructions, or WhatsApp message.
+2.  The user understands the task and intends to complete it later, but does not
+    manually create a task entry.
+3.  The user leaves the application or closes the tab, clearing their active
+    mental stack.
+4.  Upon returning, the user experiences context reconstruction failure,
+    completely forgetting where the task originated, which platform contains the
+    instructions, or what files were associated with the project.
+
+Traditional productivity tools fail because they require manual task entry. If
+the system relies on active user maintenance, the friction of entry leads to
+system abandonment, resulting in forgotten commitments and scheduling failures.
+
+1.2 Defining Administrative Context Debt & The Discovery Blindspot
+
+Administrative Context Debt is the cognitive and temporal overhead incurred by a
+worker to manually locate project inputs, reconstruct fragmented state across
+platforms, and coordinate work across siloed tools. When information is
+scattered across browser tabs, communication history, and download folders, this
+context debt leads to task neglect and cognitive fatigue before work even
+begins.
+
+Furthermore, a critical bottleneck is the Discovery Blindspot: many deadlines
+are missed not because context was lost during execution, but because the work
+entered the user's life without ever being registered as a formal commitment. No
+scheduler or task list can prevent failure if the item was never logged in the
+first place.
+
+1.3 Product Vision & Core Mission Statement
+
+Chronos Pilot is not a productivity application; it is an ambient local
+context-reconstruction daemon with an ambient desktop companion interface.
+
+The system continuously models the user's active context, evaluates scheduling
+feasibility, detects logical mismatches, and autonomously reconstructs
+commitment states and generated drafts inside a secure, directory-bounded
+workspace while maintaining strict human-in-the-loop validation.
+
+┌────────────────────────────────────────────────────────────────────────┐
+│                        CHRONOS PILOT CORE ENGINE                       │
+├────────────────────────────────────────────────────────────────────────┤
+│                                                                        │
+│  [Passive Ingestion Stream] (DOM, Tabs, Files, WhatsApp Web, AI Chats)  │
+│         │                                                              │
+│         ▼                                                              │
+│  [Opportunity Detection Engine (ODE)] (Passive Commitment Discovery)   │
+│         │                                                              │
+│         ▼                                                              │
+│  [Deadline Discovery Engine (DDE)] (Candidate extraction registry)     │
+│         │                                                              │
+│         ▼                                                              │
+│  [Commitment-Centric Graph Layer] (Leiden Clustering on igraph Engine) │
+│         │                                                              │
+│         ▼                                                              │
+│  [Personal Capacity Model (PCM)] (Adaptive cognitive profiling)        │
+│         │                                                              │
+│         ▼                                                              │
+│  [Deliverability Predictor] (P(success) audited via Brier Scores)       │
+│         │                                                              │
+│         ▼                                                              │
+│  [Schedule Drift Engine (SDE)] (Automatic schedule collapse repair)    │
+│         │                                                              │
+│         ▼                                                              │
+│  [Context Continuation Engine (CCE)] (Modes A, B, & ARC Idle Research) │
+│         │                                                              │
+│         ▼                                                              │
+│  [Interactive Intercept HUD & Consent Gate] (Action-Sourced Feedback)  │
+│                                                                        │
+└────────────────────────────────────────────────────────────────────────┘
+
+The system operates under three design axioms:
+
+  - Zero Manual Friction: The user does not manually input tasks. The system
+    passively discovers and structures work from environmental observations.
+  - Contextual Tracing: Every item is linked directly to its origin point
+    (specific PDF paths, WhatsApp message timestamps, or browser tab URLs) to
+    eliminate context reconstruction lag.
+  - Human-Gated Advancement: The system may autonomously advance research and
+    stage draft files inside a sandboxed environment, but it is restricted from
+    performing any external actions (such as git pushes, sending messages, or
+    modifying production code bases) without explicit user authorization.
+
+1.4 Strategic Shift: Commitment-Centric Ontology
+
+To align with actual workflow realities, Chronos Pilot v3.0 replaces
+project-centric hierarchy with a Commitment-Centric Ontology. Many critical
+deliverables are atomic responsibilities (e.g., submitting an assignment,
+sending a proposal, or renewing a document) that do not warrant a complex
+project structure.
+
+  - The Root Entity: The core structural unit of the graph is the Commitment.
+    Each commitment binds deadlines, sources, files, message threads, research
+    context, and deliverables.
+  - The Container Layer: Projects are represented as optional container
+    supergraphs that map groups of interconnected commitments.
+  - The Consequence: Context nodes, telemetry, predictions, and schedules map
+    directly to Commitments, ensuring the system can track and resolve isolated
+    tasks without requiring manual project setup.
+
+| Stakeholder Role                    | Core Workflow Pain Point                                                                                                                                                                | System Value Proposition                                                                                                                     |
+| :---------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Independent Founder / Developer** | Manages multiple commitments. Information is scattered across local download folders, chat interfaces, and WhatsApp threads. Experiences scheduling failures and forgotten obligations. | Passive multi-channel commitment detection, automated contextual tracing, and deliverability modeling to eliminate manual tracking friction. |
+| **Academic Coordinator / Client**   | Dispatches instructions via unstructured files, notices, and emails. Expects timely deliverables without sending follow-up reminders.                                                   | Accurate extraction of milestones, deadlines, and project deliverables from unstructured communications.                                     |
+| **Research Supervisor**             | Evaluates the cognitive efficacy and safety boundaries of passive task extraction models.                                                                                               | Provable safety boundaries, statistical feasibility modeling, and strict local consent gates.                                                |
+
+2. Native Desktop Architecture & Technology Stack
+
+To ensure system performance, strict data isolation, and OS-level telemetry
+access, Chronos Pilot v3.0 is structured as a native desktop utility.
+
+                     NATIVE PROCESS TOPOLOGY
+                     
+  ┌────────────────────────────────────────────────────────┐
+  │                 TAURI DESKTOP RUNTIME                  │
+  │  - SolidJS / TypeScript Frontend Layer                 │
+  │  - Low-overhead memory management                      │
+  └───────────────────────────┬────────────────────────────┘
+                              │
+                              ▼ (Secure localhost IPC / stdin-stdout)
+  ┌────────────────────────────────────────────────────────┐
+  │                 RUST DAEMON WORKER (CORE)              │
+  │  - notify Fs Watcher  - active-win-pos-rs Workspace    │
+  │  - user-idle Daemon   - SQLite + sqlite-vec Database   │
+  └───────────────────────────┬────────────────────────────┘
+                              │
+                              ▼ (Low-privilege Tauri Sidecars)
+  ┌────────────────────────────────────────────────────────┐
+  │                 PYTHON AI WORKER PROCESSES             │
+  │  - DDE / ODE Extraction - Leiden igraph Clustering       │
+  │  - OCR / Embeddings   - Local LLM Research Inference   │
+  └────────────────────────────────────────────────────────┘
+
+2.1 The Native Rust Core Daemon
+
+The Rust core daemon (compiled via Tauri v2) executes as a low-privilege
+background service. It manages system events, handles directory watching, and
+maintains local storage:
+
+  - Active Directory Watcher (notify crate): Provides cross-platform filesystem
+    notifications on directory modifications inside ~/Downloads and watched
+    workspaces.
+  - Active Window Focus Monitor (active-win-pos-rs crate): Logs window focus
+    states directly from OS APIs.
+  - Global Idle Monitor (user-idle crate): Measures keyboard and mouse idle
+    durations.
+  - Embedded Local Database (rusqlite + sqlite-vec + FTS5 extensions): Runs an
+    embedded database instance, executing SQL operations, full-text searches,
+    and vector similarity checks within a single-file structure.
+
+2.2 Python AI Sidecar Processes
+
+AI pipelines run within isolated Python subprocesses managed dynamically by the
+Tauri host process:
+
+  - IPC Communication: Processes exchange data with the Rust daemon over
+    localhost loopback sockets (127.0.0.1) protected by a constant-time
+    cryptographic token verification header (X-Chronos-Auth-Token).
+  - AI Worker Executables: Workers are compiled into platform sidecar binaries
+    (containing embedded PyTorch/ONNX frameworks) to avoid requiring local
+    system Python environments:
+      - ode_worker (Opportunity Detection & Ingestion Evaluation)
+      - dde_worker (Deadline & Commitment Discovery Extraction)
+      - embedding_worker (Local embedding vector generation)
+      - graph_worker (Leiden commitment community clustering)
+      - ocr_worker (Screenshot and image OCR)
+      - research_worker (Local research agent execution - ARC)
+
+2.3 The SolidJS Desktop Companion Frontend
+
+The user interface is built using SolidJS and TypeScript, compiling to a tiny
+reactive client:
+
+  - Zero-Runtime Overhead: SolidJS compiles directly to fine-grained DOM
+    operations without utilizing a heavy Virtual DOM, ensuring the client's
+    background footprint remains below 40MB of RAM.
+  - Instant Panel Painting: Transition states, sliding sidebar panel renders,
+    and Command Center overlays display instantly when triggered.
+
+2.4 Decoupled Source Ingestion Adapter Layer & Fingerprinting
+
+To insulate core daemon logic from frequent web interface layout updates, all
+raw ingestion routes must implement the abstract interface defined in v3.0:
+
+export interface IngestionPayload {
+    sourceUri: string;
+    sourceType: "WHATSAPP" | "CHATGPT" | "CLAUDE" | "GEMINI" | "PDF" | "EMAIL" | "GENERIC_DOM";
+    rawText: string;
+    extractedHtml?: string;
+    sessionHash: string;
+    timestamp: string;
+}
+
+export interface IIngestionAdapter {
+    targetDomainPattern: RegExp;
+    isMatch(url: string): boolean;
+    parsePayload(document: Document): IngestionPayload | null;
+}
+
+The system registers dedicated, decoupled adapter implementations
+(WhatsAppAdapter, ChatGPTAdapter, ClaudeAdapter, GeminiAdapter, and a fallback
+GenericDOMAdapter). If an adapter throws a parsing layout error (ERR-DOM-001),
+the ingestion worker isolates the failure, records the trace in event_log, and
+falls back to manual clipboard sync or raw text extraction.
+
+  - FR-1.6 DOM Fingerprint Versioning: To track platform layout drift
+    dynamically, the extension logs structural layout hashes during parsing
+    operations. Every capture attempts to validate key node arrangements,
+    writing the matching version, DOM signature, and error rate to
+    adapter_fingerprints. If the consecutive failure rate for a signature
+    exceeds 40% over a rolling 10-attempt window, the adapter disables the
+    broken selector branch and falls back to generic DOM parsing until an
+    updated adapter version is registered.
+
+3. Functional Requirements
+
+FR-1: Passive Multi-Channel Context Ingestion
+
+  - FR-1.1 Filesystem Monitor: The system must run an active background watcher
+    targeting the user's ~/Downloads and configured watch folders.
+  - FR-1.2 Automatic PDF/DOCX Parsing: When a new file is detected, the system
+    must trigger local text extraction. PDF text extraction must handle
+    multi-column layouts, identify milestones, assignments, invoices, and
+    deadlines, and index the extracted text inside the local database.
+  - FR-1.3 Screenshot & Image OCR: Newly discovered image formats (.png, .jpg)
+    must pass through a local, lightweight optical character recognition engine
+    to extract textual content.
+  - FR-1.4 WhatsApp Web DOM Observer: The browser extension content script must
+    monitor web.whatsapp.com for chat updates. It must parse text streams of
+    open threads to identify commitment markers, filtering out emoji sequences
+    and non-text elements.
+  - FR-1.5 Browser Tab Active Monitor: The system must periodically (every 5
+    minutes) cache the active tabs' metadata (Title, URL, access timestamp) to
+    maintain the developer's research footprint.
+  - FR-1.6 AI Chat Session Scraper: The browser extension must monitor active
+    tab interactions on supported AI domains (chatgpt.com, claude.ai,
+    gemini.google.com). It must parse active chat trees, logging raw context,
+    conversational prompts, generated code, and reference files to track
+    structural development.
+  - FR-1.7 Opportunity Detection Engine (ODE): The system must continuously
+    evaluate passive ingestion feeds (file system drops, newly opened browser
+    links, and message logs) to identify new commitment or project
+    opportunities:
+      - FR-1.7.1 Asset Evaluation: When a new document (e.g., a PDF titled
+        Assignment_3.pdf, a client brief, or a new GitHub repository clone) is
+        detected, the ODE calculates a classification score.
+      - FR-1.7.2 Opportunity Prompt: If the score indicates a new
+        project/commitment opportunity, the system bypasses automatic community
+        mapping and prompts the user with a notification card on the HUD: "New
+        Project Opportunity Detected. Create a tracked workspace?"
+
+FR-2: Project & Commitment Memory Engine (PCME)
+
+FR-2.1 Unassigned Commitment Inbox
+
+The PCME establishes Commitments as first-class entities. To eliminate orphan
+records, any ingested context node must be assigned to either an active
+commitment or the Unassigned Context Inbox (commitment_id is null). This
+provides an initial staging ground, preventing graph contamination before
+semantic associations are resolved.
+
+                      INBOX ASSOCIATION PIPELINE
+                      
+  [ New Ingested Asset ]
+            │
+            ▼
+  [ Project Resolution Engine ] ──► (Calculate Match Score)
+            │
+            ├─── (Score >= 0.80) ───► Attach to Project/Commitment
+            │
+            └─── (Score < 0.80)  ───► Route to Unassigned Context Inbox
+
+FR-2.2 Project Resolution Engine & Routing
+
+When a new context node (C_{\text{new}}) is ingested, the system bypasses
+expensive Leiden clustering runs. Instead, the engine calculates a Project Match
+Score (MS) against active projects and commitments based on similarity metrics:
+
+  - If MS \ge 0.80, the node is automatically routed to the target
+    commitment/project.
+  - If MS < 0.80, the node is routed to the Unassigned Context Inbox. Modularity
+    recalculation and community clustering runs are scheduled as lower-priority
+    background tasks.
+
+FR-2.3 Context Node Primitive & Schema Inheritance
+
+The system must model all ingested items as structured Context Nodes (C_i). To
+prevent database schema pollution at scale while maintaining normalized database
+properties, the database implements a strict relational inheritance pattern.
+Shared contextual tracking fields are stored within the parent context_nodes
+table, while specialized attributes are written to corresponding child extension
+tables:
+
+  - file_nodes: Caches local paths, absolute sizes, file extensions, and
+    modification times.
+  - message_nodes: Logs platform identifiers, sender identities, and thread
+    metadata.
+  - terminal_nodes: Captures shell environments, active directories, input
+    commands, and execution codes.
+  - url_nodes: Indexes domains, complete URLs, and parsed query parameter maps.
+
+FR-2.4 Scalable O(n \log n) Candidate Generation via sqlite-vec ANN
+
+To prevent performance degradation as the Context Graph scales, the system must
+avoid all global pairwise similarity calculations. For any newly generated
+Context Node C_{\text{new}}:
+
+1.  Semantic Index Match Query: The system must execute a local Approximate
+    Nearest Neighbor (ANN) index-guided search using sqlite-vec to retrieve only
+    the top K = 50 nearest semantic neighbors:
+    SELECT node_id, distance 
+    FROM context_embeddings 
+    WHERE embedding MATCH ?1 AND distance < 0.25 
+    ORDER BY distance LIMIT 50;
+2.  Neighbor Filtering: The engine must filter out any candidate nodes that have
+    decayed below the active relevance threshold (\tau_{\text{forget}} = 0.15).
+3.  Local Pairwise Recalculation: The system must compute edge weights W_{u,v}
+    only between C_{\text{new}} and the active candidate subset, reducing graph
+    insertion complexity from O(n^2) to O(n \log n).
+
+FR-2.5 Automatic Cross-Platform Thread Association
+
+The Memory Engine must link disparate conversations. If a user asks Claude about
+a problem, and later asks Gemini about the same problem, the engine must
+associate the conversations using a semantic vector similarity threshold
+(\text{Cosine Similarity} \ge 0.78) and write an association edge into the
+SQLite graph database.
+
+FR-2.6 Project Intelligence Layer (Semantic Leiden Clustering over igraph)
+
+Commitments and projects are mapped to dynamic spatial graph locations.
+
+  - FR-2.6.1 In-Memory igraph Projection: To prevent computational bottlenecks,
+    the local Python sidecar must project active SQLite node and edge records
+    into an in-memory igraph instance (implemented in C) every 30 minutes.
+  - FR-2.6.2 Edge Weighting Formulation: The weight of an association edge
+    between context nodes u and v is calculated using the following formula:
+
+W_{u,v} = \omega_{\text{sem}} \cdot S_{\text{cosine}}(E(C_u), E(C_v)) + \omega_{\text{src}} \cdot J(S_u, S_v) + \omega_{\text{temp}} \cdot \text{e}^{-\lambda \cdot |t_u - t_v|}
+
+Where:
+
+  - S_{\text{cosine}} \in [0, 1] is the cosine similarity of the local vector
+    embeddings of nodes u and v.
+  - J(S_u, S_v) \in [0, 1] is the Jaccard similarity of shared parent source
+    URIs retrieved from the source_provenance table:
+    J(S_u, S_v) = \frac{|\text{Sources}_u \cap \text{Sources}_v|}{|\text{Sources}_u \cup \text{Sources}_v|}
+  - |t_u - t_v| is the absolute time delta (expressed in hours) between the
+    creation timestamps of nodes u and v.
+  - \lambda is the temporal decay coefficient (default = 0.02).
+  - The default normalization weights are assigned as \omega_{\text{sem}} = 0.5,
+    \omega_{\text{src}} = 0.3, and \omega_{\text{temp}} = 0.2.
+  - FR-2.6.3 Incremental Leiden Partition Optimization: Rather than rebuilding
+    community divisions from a blank state on every execution sweep, the
+    in-memory C-core igraph engine must utilize the previous community
+    configuration as a warm-start seed partition. The Leiden algorithm
+    recalculates modularity shifts locally around newly added or modified
+    context nodes, significantly reducing computational overhead.
+  - FR-2.6.4 Membership Audit Trail: Any changes in node project/commitment
+    membership across clustering iterations must be logged to the
+    project_membership_history table to track evolution trends and prevent
+    indexing drift.
+
+FR-2.7 Project Supergraph Container Layer
+
+To prevent cognitive misalignment where Leiden community partitions split a
+single goal into multiple communities, the system must support Project
+Supergraph Containers.
+
+  - FR-2.7.1 Container Schema: A project node acts as a user-facing workspace
+    container that maps one or more semantic communities using the
+    project_community_map table.
+  - FR-2.7.2 Project Level Resolution: When executing CCE operations, the engine
+    resolves context at the Project Supergraph level rather than across
+    individual semantic communities.
+
+FR-2.8 Reversible Entity Resolution Layer (ERL)
+
+To prevent graph duplication and link fragmentation caused by minor lexical
+differences (e.g., "EthnoGen", "EthnoGen Nexus", "Project EthnoGen"), the system
+must process all incoming nodes through a background Entity Resolution Layer.
+
+  - FR-2.8.1 Multi-Modal Match Check: When a new entity or subject is detected,
+    the ERL executes a string-based (Jaro-Winkler similarity \ge 0.88) and
+    vector-based (cosine similarity \ge 0.85) check against the historical nodes
+    list.
+  - FR-2.8.2 Canonical Mapping: Matches are mapped back to a unified row in the
+    canonical_entities table, ensuring all project variations resolve to a
+    single, consistent structural record.
+  - FR-2.8.3 Reversible Merging: All consolidation actions must be reversible.
+    The system must write complete lineage modifications to the
+    entity_merge_history and entity_split_history tables, allowing the user to
+    split accidentally merged entities on the HUD.
+
+FR-2.9 Decision Conflict Detection (DCD) & Taxonomy
+
+The DCD engine must run periodic checks across same-project nodes to identify
+conflicting resolutions. Detected conflicts must be written to the database
+using the following explicit taxonomy:
+
+  - DIRECT_CONFLICT: Two nodes assert mutually exclusive paths (e.g., Django vs.
+    FastAPI backend).
+  - SOFT_CONFLICT: Sub-dependency mismatch or tooling divergence (e.g., SQLite
+    vs. pg).
+  - ALTERNATIVE_OPTION: User explores options concurrently without selecting a
+    primary path.
+  - OBSOLETE_DECISION: Newly extracted decision contradicts and replaces an
+    older decision.
+
+FR-3: Deadline & Commitment Discovery Engine (DDE)
+
+The system must run a dedicated analysis pipeline to discover timelines and
+expectations before manual user declaration:
+
+                  DEADLINE DISCOVERY PROCESS (DDE)
+                  
+  [ Raw Stream Ingestion ] 
+            │
+            ▼
+  [ Heuristic Selector & NLP ] ──► (Confidence Evaluation)
+            │
+            ├─── (Conf >= 0.85) ───► Write to `commitments` & Alert User (Toast)
+            │
+            ├─── (0.60 <= Conf < 0.85) ──► Write to `deadline_candidates` & HUD Card
+            │
+            └─── (Conf < 0.60) ───► Discard (Silent Log)
+
+  - FR-3.1 Automated Pipeline Extraction: The DDE must process text segments
+    extracted from the passive ingestion stream (FR-1) to isolate explicit and
+    implicit deadline statements (e.g., "submit by Friday," "due June 28,"
+    "closes at midnight").
+  - FR-3.2 Source Identification: The DDE must parse:
+      - WhatsApp Messages: Extract deadlines from direct inquiries or group
+        notices.
+      - PDF Files: Identify academic guidelines, project syllabus schedules, or
+        customer invoices dropped into watched paths.
+      - AI Tool Chat Exchanges: Analyze user-developer conversations within
+        active browser tabs to track implicit commitments.
+      - Emails: Scan body text for task dates and deliverables.
+  - FR-3.3 Extraction Registries: Extracted objects are directed to matching
+    validation states:
+      - deadline_candidates: Unprocessed deadlines with raw structural text.
+      - deliverable_candidates: Unconfirmed file requirements or specific output
+        tasks.
+      - commitment_candidates: Proposed high-level objectives.
+  - FR-3.4 Strict Multi-Tier Confidence Gates:
+      - FR-3.4.1 High Confidence (\text{Conf}_{\text{extract}} \ge 0.85):
+        Immediately logged as ACCEPTED in dcre_registry (and automatically maps
+        to active commitments). Triggers a Layer 1 System notification and
+        places a highlighted commitment card on the Sidebar.
+      - FR-3.4.2 Medium Confidence
+        (0.60 \le \text{Conf}_{\text{extract}} < 0.85): Logged as PENDING within
+        target candidate tables. The item is held silently in the database and
+        shown on the Sidebar under "Unprocessed Discoveries" for manual
+        confirmation.
+      - FR-3.4.3 Low Confidence (\text{Conf}_{\text{extract}} < 0.60): Discarded
+        immediately in-memory.
+
+FR-4: Cognitive Workload & Capacity Engine
+
+FR-4.1 Adaptive Workload Score (WS) Formulation
+
+The system must calculate a real-time Workload Score (WS) to model the user's
+cognitive burden:
+
+WS = \min \left( 100, \omega_1 \cdot N_{\text{active}} + \omega_2 \cdot H_{\text{imminent}} + \omega_3 \cdot R_{\text{recent}} \right)
+
+Where:
+
+  - N_{\text{active}} represents the total number of uncompleted commitments
+    tracked within the local database.
+  - H_{\text{imminent}} is the count of task deadlines expiring within the
+    next 24 hours.
+  - R_{\text{recent}} is the rate of commitments extracted per hour over the
+    current system session.
+  - The default weights are assigned as
+    \omega_1 = 5.0, \omega_2 = 15.0, \omega_3 = 10.0.
+
+FR-4.4 Personal Capacity Model (PCM) & Active Workspace Tracking
+
+The system must build an empirical model of the user's capacity and velocity
+instead of relying on static, generic estimates:
+
+  - FR-4.4.1 Velocity Tracking: The PCM monitors application focus events (from
+    active_window_logs and workspace_connector_registry files) to measure actual
+    task output:
+      - Coding Velocity: Line changes and modification rates inside watched IDE
+        workspaces.
+      - Writing Velocity: Character and page expansion rates in text editors and
+        documentation apps.
+  - FR-4.4.2 Interruption and Context Switch Modeling: The system tracks window
+    focus changes (N_{\text{switches}}) and global idle intervals to log the
+    frequency of context interruptions and the time required to resume
+    productive work.
+  - FR-4.4.3 Focus Hour Integration: The engine integrates daily and weekly
+    active intervals to estimate available focus hours
+    \tilde{H}_{\text{capacity}}(t).
+
+FR-4.5 Deliverability Prediction Engine (DPE)
+
+The DPE calculates completion feasibility metrics for active commitments:
+
+  - FR-4.5.1 Mathematical Probability Formulation (P(\text{success})): For each
+    active commitment, the engine computes a completion probability using
+    learned historical profiles:
+
+P(\text{success}) = \sigma \left( \gamma \cdot \left( \frac{\eta \cdot H_{\text{avail}}(\Delta T)}{E_{\text{req}} \cdot F_{\text{switch}}} - 1 \right) \right)
+
+Where:
+
+  - \sigma(x) = \frac{1}{1 + \text{e}^{-x}} is the standard sigmoid logistic
+    function.
+  - H_{\text{avail}}(\Delta T) = \int_{t_{\text{current}}}^{t_{\text{deadline}}} \tilde{H}_{\text{capacity}}(t) \, dt
+    is the integrated available focus hours within the remaining deadline window
+    (\Delta T = t_{\text{deadline}} - t_{\text{current}}), as modeled by the
+    PCM.
+  - E_{\text{req}} is the estimated required effort in hours.
+  - F_{\text{switch}} = 1 + \beta \cdot N_{\text{switches}} represents the
+    context-switching penalty coefficient.
+  - \eta is the learned velocity scaling factor (ratio of delivered vs.
+    estimated output).
+  - \gamma and \beta are tuning constants adjusted dynamically by the feedback
+    engine.
+  - FR-4.5.2 Auditing & Calibration Metrics: To ensure prediction accuracy, the
+    model is evaluated using the Brier Score (BS) and Expected Calibration Error
+    (ECE):
+    BS = \frac{1}{N} \sum_{i=1}^{N} \left( P_i(\text{success}) - o_i \right)^2
+    Where o_i \in \{0, 1\} represents the actual outcome of commitment i (1 if
+    completed before deadline, 0 if missed or manually abandoned). The system's
+    background optimization loop must adjust internal coefficients to minimize
+    the score, targeting BS \le 0.15 and ECE \le 0.15.
+
+FR-4.6 Schedule Drift Engine (SDE) & Schedule Collapse Recovery
+
+The SDE addresses timeline disruptions caused by unplanned user absence (e.g.,
+disappearing for 24-48 hours) or unexpected development friction:
+
+  - FR-4.6.1 Drift Metric (\mathcal{D}): The system continuously evaluates
+    schedule drift across all active commitments:
+    \mathcal{D} = \sum_{c \in \mathcal{C}_{\text{active}}} \max(0, t_{\text{current}} - t_{\text{scheduled\_start\_c}}) \cdot \mathbb{I}(c \text{ is unstarted})
+    Where \mathbb{I} is the indicator function showing if commitment c is
+    pending but has passed its scheduled start window.
+  - FR-4.6.2 Collapse Correction: If drift exceeds a safety threshold
+    (\mathcal{D} > \mathcal{D}_{\text{threshold}}), the schedule is flagged as
+    "Collapsed."
+  - FR-4.6.3 Plan Recalculation: The SDE automatically shifts start dates for
+    unstarted tasks, defers low-priority commitments without upcoming deadlines,
+    and updates completion probability estimates (P(\text{success})).
+  - FR-4.6.4 Dynamic Feasibility Updates: Upon user return, the system displays
+    a schedule update card on the HUD: "Timelines adjusted due to inactivity. 2
+    low-priority tasks deferred; feasibility metrics recalculated."
+
+FR-4.7 Closed-Loop User Feedback Learning Engine
+
+The system must maintain an sequential audit trail of all manual user
+adjustments (approvals, rejections, project splits, merges, or conflict
+overrides) in the event_log table.
+
+  - FR-4.7.1 Nightly Parameter Recalibration: Every 24 hours, a background
+    optimization routine must parse the logged event pairs to minimize the delta
+    between predicted task outcomes and actual user adjustments.
+  - FR-4.7.2 Weight Parameter Optimization: The system must perform a
+    gradient-descent update over the PPM and clustering weight parameters
+    (\theta): \theta_{t+1} = \theta_t - \eta \cdot \nabla \mathcal{L}(\theta_t)
+    Where \mathcal{L}(\theta_t) represents the loss function modeling estimation
+    error, and \eta is the learned execution step size (learning rate).
+
+FR-5: Workspace Connector Framework
+
+To enable deep cognitive state tracking and eliminate re-entry lag, the system
+implements a native, decoupled editor integration framework.
+
+                      WORKSPACE CONNECTOR INTERFACE
+                      
+  [ Active IDE: VSCode / Cursor / PyCharm ]
+                    │
+                    ▼ (Local REST / WebSocket Loopback)
+  ┌────────────────────────────────────────────────────────┐
+  │                 IWORKSPACE_CONNECTOR INTERFACE         │
+  └─────────────────┬──────────────────────────────┬───────┘
+                    │                              │
+                    ▼                              ▼
+             [ Active Files ]               [ Cursor Lines ]
+
+  - FR-5.1 Abstraction Interface: Editor integrations must communicate with the
+    core daemon via a unified local interface:
+    export interface OpenFile {
+        filePath: string;
+        focusDurationSeconds: number;
+        lastAccessedAt: string;
+    }
+
+    export interface CursorPosition {
+        filePath: string;
+        line: number;
+        column: number;
+        surroundingContext: string; // Caches adjacent code lines
+    }
+
+    export interface IWorkspaceConnector {
+        editorId: "VSCODE" | "CURSOR" | "WINDSURF" | "PYCHARM" | "NEOVIM" | "ZED";
+        getWorkspaceState(): { activeProjectRoot: string; openTabs: string[] };
+        getOpenFiles(): OpenFile[];
+        getCursorPositions(): CursorPosition[];
+    }
+  - FR-5.2 Connector Registries: The system loads and manages active
+    integrations via the workspace_connector_registry table.
+      - Phase 1 (Integrated Release): Out-of-the-box extensions for VSCode,
+        Cursor, and Windsurf.
+      - Phase 2 (Subsequent Scope): Connectors for JetBrains PyCharm and
+        IntelliJ runtimes.
+      - Phase 3 (Community Extensions): Headless daemon integration hooks for
+        Neovim and Zed.
+
+FR-6: Context Continuation Engine (CCE)
+
+The CCE isolates context restoration workflows into three distinct operational
+modes:
+
+                          CCE OPERATIONAL MODES
+                          
+  ┌────────────────────────────────────────────────────────────┐
+  │ MODE A: PASSIVE BACKGROUND ASSISTANCE                      │
+  │ - Triggers only during physical absence (T_idle >= 20)     │
+  │ - Generates stubs & non-intrusive gap logs                 │
+  │ - Restricted strictly to `./chronos_staged/`               │
+  ├────────────────────────────────────────────────────────────┤
+  │ MODE B: EXPLICIT PROJECT CONTINUATION                      │
+  │ - Bypasses idle timers, opt-ins, and confidence gates      │
+  │ - Triggered directly by the "Continue Project" button      │
+  │ - Generates structural Project Continuation Snapshots      │
+  ├────────────────────────────────────────────────────────────┤
+  │ AUTONOMOUS RESEARCH CONTINUATION (ARC)                     │
+  │ - Active background research tasks during user absence     │
+  │ - Synthesizes context, docs, and papers                    │
+  │ - Stages `research_update.md` inside sandboxed environment │
+  └────────────────────────────────────────────────────────────┘
+
+FR-6.1 Mode A: Passive Background Assistance
+
+  - FR-6.1.1 Triggers: Fires when IC \ge 0.75,
+    T_{\text{idle}} \ge 20 \text{ minutes}, and "Ambient Workload" is toggled
+    ON.
+  - FR-6.1.2 Scope: Passively scans the active communities partition in SQLite
+    to detect information gaps, logs unresolved items inside knowledge_gaps, and
+    writes non-intrusive staged drafts inside the local ./chronos_staged/
+    folder.
+
+Software Requirements Specification (SRS)
+
+Chronos Pilot (v3.0) — Cognitive Context Operating System Baseline
+
+Document Reference: CP-SRS-2026-V3.0-RELEASE
+Status: 🔒 Core Systems Architecture Baseline Frozen
+Date: June 23, 2026
+
+Change Register — Evolution from v2.6 to v3.0
+
+| Revision | Section Affected      | Origin / Context     | Severity   | Summary of Changes                                                                                                                                                                                                                                                                                                                                                                      |
+| :------- | :-------------------- | :------------------- | :--------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **v2.6** | Core Architecture     | Structural Topology  | 🔴 Critical | Inverted primary data model to Inherited Context Nodes. Introduced Project Supergraph Layer. Expanded snapshots with cognitive parameters and workspace state capture.                                                                                                                                                                                                                  |
+| **v3.0** | Core Architecture     | Strategic Alignment  | 🔴 Critical | **Redesigned from Task-Centric to Context-Centric.** Repositioned system from a passive assistant to a local Context Operating System.                                                                                                                                                                                                                                                  |
+| **v3.0** | Section 1.3           | Product Vision       | 🔴 Critical | **Reframed Core Vision Statement.** Redefined Chronos Pilot as a local context-reconstruction daemon with an ambient desktop companion interface.                                                                                                                                                                                                                                       |
+| **v3.0** | Section 3 (FR-2.4)    | Data Modeling Shift  | 🔴 Critical | **Introduced Project Supergraph Layer.** Replaced strict community partitions with user-facing Projects that group multiple Leiden communities dynamically.                                                                                                                                                                                                                             |
+| **v3.0** | Section 3 (FR-5.2)    | CCE Execution        | 🔴 Critical | **Refined CCE into Dual Execution Modes.** Differentiated Mode A (Passive Background Assistance) and Mode B (Explicit Project State Reconstruction).                                                                                                                                                                                                                                    |
+| **v3.0** | Section 5 (DDL)       | Schema Normalization | 🟠 High     | **Expanded `project_snapshots` table.** Integrated cognitive tracking parameters (objectives, next entry point, and active workspace configurations).                                                                                                                                                                                                                                   |
+| **v3.0** | Section 3 (FR-1.6)    | Ingestion Durability | 🟠 High     | **Added Ingestion Fingerprint Versioning.** Tracks adapter versions, DOM signatures, and failure rates to manage web layout drift.                                                                                                                                                                                                                                                      |
+| **v2.7** | Section 4 (NFR-1)     | Privacy / Security   | 🔴 Critical | **Added Workspace Sensitivity Classifier (WSC).** Formulated automatic regex-based redaction of credentials prior to database writing.                                                                                                                                                                                                                                                  |
+| **v2.7** | Section 5 (DDL)       | Schema Durability    | 🟠 High     | **Upgraded SQLite Schema.** Integrated migration, model registry, community metric, and snapshot lineage tracking tables.                                                                                                                                                                                                                                                               |
+| **v3.0** | Section 1.3 & 3       | Architectural Pivot  | 🔴 Critical | **Replaced Project-Centric with Commitment-Centric Hierarchy.** Established *Commitments* as the primary relational system entity. Projects are optional container supergraphs mapping groups of commitments.                                                                                                                                                                           |
+| **v3.0** | Section 3 (FR-1.7)    | Ingestion Layer      | 🔴 Critical | **Introduced Opportunity Detection Engine (ODE).** Scans passive text streams and local file system drops to discover potential untracked commitment and project opportunities.                                                                                                                                                                                                         |
+| **v3.0** | Section 3 (FR-3.5)    | Extraction Logic     | 🔴 Critical | **Introduced Deadline & Commitment Discovery Engine (DDE).** Identifies dates, deadlines, and deliverables in unstructured files or communications to populate discovery candidate registries.                                                                                                                                                                                          |
+| **v3.0** | Section 3 (FR-4.4)    | Capacity Modeling    | 🔴 Critical | **Introduced Personal Capacity Model (PCM).** Replaced static estimations with dynamic modeling tracking average coding/writing velocity, interruption frequency, and focus availability profiles.                                                                                                                                                                                      |
+| **v3.0** | Section 3 (FR-4.6)    | Schedule Adjustments | 🟠 High     | **Introduced Schedule Drift Engine (SDE) / Schedule Collapse Recovery.** Detects user-absence intervals and automatically recomputes feasibility, reforecasting completion timelines.                                                                                                                                                                                                   |
+| **v3.0** | Section 3 (FR-6.6)    | Autonomous Prep      | 🟠 High     | **Introduced Autonomous Research Continuation (ARC).** Allows local background agents to execute research missions during system idle time, staging drafts inside sandboxed staging folders.                                                                                                                                                                                            |
+| **v3.0** | Section 3 (FR-7.5)    | User Interface       | 🟠 High     | **Introduced Deliverability Warning Cards.** Added completion probability indicators ($P(\text{success})$) directly on the HUD sidebar.                                                                                                                                                                                                                                                 |
+| **v3.0** | Sections 2, 4, 5, & 6 | Defensive Hardening  | 🔴 Critical | **Integrated Six Red Team Security Resolutions.** Enforced stdin token delivery, dynamic port negotiation, executable hash validation, hybrid ONNX-based NER masking, process-focus blocklists, vector differential privacy, strict prompt delimitation, SQLCipher at-rest database encryption, nightly gradient parameter clamping, and non-executable draft staging format isolation. |
+
+1. Problem Statement & Product Vision
+
+1.1 The Context Fragmentation & "Read-and-Forget" Loop
+
+Modern knowledge work is distributed across disconnected interfaces (ChatGPT,
+Claude, Gemini, Perplexity), local directories, communication channels
+(WhatsApp, email), and browser tabs.
+
+The dominant user pattern is the "Read-and-Forget" Loop:
+
+1.  The user receives or views an unstructured task, assignment PDF, client
+    instructions, or WhatsApp message.
+2.  The user understands the task and intends to complete it later, but does not
+    manually create a task entry.
+3.  The user leaves the application or closes the tab, clearing their active
+    mental stack.
+4.  Upon returning, the user experiences context reconstruction failure,
+    completely forgetting where the task originated, which platform contains the
+    instructions, or what files were associated with the project.
+
+Traditional productivity tools fail because they require manual task entry. If
+the system relies on active user maintenance, the friction of entry leads to
+system abandonment, resulting in forgotten commitments and scheduling failures.
+
+1.2 Defining Administrative Context Debt & The Discovery Blindspot
+
+Administrative Context Debt is the cognitive and temporal overhead incurred by a
+worker to manually locate project inputs, reconstruct fragmented state across
+platforms, and coordinate work across siloed tools. When information is
+scattered across browser tabs, communication history, and download folders, this
+context debt leads to task neglect and cognitive fatigue before work even
+begins.
+
+Furthermore, a critical bottleneck is the Discovery Blindspot: many deadlines
+are missed not because context was lost during execution, but because the work
+entered the user's life without ever being registered as a formal commitment. No
+scheduler or task list can prevent failure if the item was never logged in the
+first place.
+
+1.3 Product Vision & Core Mission Statement
+
+Chronos Pilot is not a productivity application; it is an ambient local
+context-reconstruction daemon with an ambient desktop companion interface.
+
+The system continuously models the user's active context, evaluates scheduling
+feasibility, detects logical mismatches, and autonomously reconstructs
+commitment states and generated drafts inside a secure, directory-bounded
+workspace while maintaining strict human-in-the-loop validation.
+
+┌────────────────────────────────────────────────────────────────────────┐
+│                        CHRONOS PILOT CORE ENGINE                       │
+├────────────────────────────────────────────────────────────────────────┤
+│                                                                        │
+│  [Passive Ingestion Stream] (DOM, Tabs, Files, WhatsApp Web, AI Chats)  │
+│         │                                                              │
+│         ▼                                                              │
+│  [Opportunity Detection Engine (ODE)] (Passive Commitment Discovery)   │
+│         │                                                              │
+│         ▼                                                              │
+│  [Deadline Discovery Engine (DDE)] (Candidate extraction registry)     │
+│         │                                                              │
+│         ▼                                                              │
+│  [Commitment-Centric Graph Layer] (Leiden Clustering on igraph Engine) │
+│         │                                                              │
+│         ▼                                                              │
+│  [Personal Capacity Model (PCM)] (Adaptive cognitive profiling)        │
+│         │                                                              │
+│         ▼                                                              │
+│  [Deliverability Predictor] (P(success) audited via Brier Scores)       │
+│         │                                                              │
+│         ▼                                                              │
+│  [Schedule Drift Engine (SDE)] (Automatic schedule collapse repair)    │
+│         │                                                              │
+│         ▼                                                              │
+│  [Context Continuation Engine (CCE)] (Modes A, B, & ARC Idle Research) │
+│         │                                                              │
+│         ▼                                                              │
+│  [Interactive Intercept HUD & Consent Gate] (Action-Sourced Feedback)  │
+│                                                                        │
+└────────────────────────────────────────────────────────────────────────┘
+
+The system operates under three design axioms:
+
+  - Zero Manual Friction: The user does not manually input tasks. The system
+    passively discovers and structures work from environmental observations.
+  - Contextual Tracing: Every item is linked directly to its origin point
+    (specific PDF paths, WhatsApp message timestamps, or browser tab URLs) to
+    eliminate context reconstruction lag.
+  - Human-Gated Advancement: The system may autonomously advance research and
+    stage draft files inside a sandboxed environment, but it is restricted from
+    performing any external actions (such as git pushes, sending messages, or
+    modifying production code bases) without explicit user authorization.
+
+1.4 Strategic Shift: Commitment-Centric Ontology
+
+To align with actual workflow realities, Chronos Pilot v3.0 replaces
+project-centric hierarchy with a Commitment-Centric Ontology. Many critical
+deliverables are atomic responsibilities (e.g., submitting an assignment,
+sending a proposal, or renewing a document) that do not warrant a complex
+project structure.
+
+  - The Root Entity: The core structural unit of the graph is the Commitment.
+    Each commitment binds deadlines, sources, files, message threads, research
+    context, and deliverables.
+  - The Container Layer: Projects are represented as optional container
+    supergraphs that map groups of interconnected commitments.
+  - The Consequence: Context nodes, telemetry, predictions, and schedules map
+    directly to Commitments, ensuring the system can track and resolve isolated
+    tasks without requiring manual project setup.
+
+| Stakeholder Role                    | Core Workflow Pain Point                                                                                                                                                                | System Value Proposition                                                                                                                     |
+| :---------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Independent Founder / Developer** | Manages multiple commitments. Information is scattered across local download folders, chat interfaces, and WhatsApp threads. Experiences scheduling failures and forgotten obligations. | Passive multi-channel commitment detection, automated contextual tracing, and deliverability modeling to eliminate manual tracking friction. |
+| **Academic Coordinator / Client**   | Dispatches instructions via unstructured files, notices, and emails. Expects timely deliverables without sending follow-up reminders.                                                   | Accurate extraction of milestones, deadlines, and project deliverables from unstructured communications.                                     |
+| **Research Supervisor**             | Evaluates the cognitive efficacy and safety boundaries of passive task extraction models.                                                                                               | Provable safety boundaries, statistical feasibility modeling, and strict local consent gates.                                                |
+
+2. Native Desktop Architecture & Technology Stack
+
+To ensure system performance, strict data isolation, and OS-level telemetry
+access, Chronos Pilot v3.0 is structured as a native desktop utility.
+
+                     NATIVE PROCESS TOPOLOGY
+                     
+  ┌────────────────────────────────────────────────────────┐
+  │                 TAURI DESKTOP RUNTIME                  │
+  │  - SolidJS / TypeScript Frontend Layer                 │
+  │  - Low-overhead memory management                      │
+  └───────────────────────────┬────────────────────────────┘
+                              │
+                              ▼ (Secure localhost IPC / stdin-stdout)
+  ┌────────────────────────────────────────────────────────┐
+  │                 RUST DAEMON WORKER (CORE)              │
+  │  - notify Fs Watcher  - active-win-pos-rs Workspace    │
+  │  - user-idle Daemon   - SQLite + sqlite-vec Database   │
+  └───────────────────────────┬────────────────────────────┘
+                              │
+                              ▼ (Low-privilege Tauri Sidecars)
+  ┌────────────────────────────────────────────────────────┐
+  │                 PYTHON AI WORKER PROCESSES             │
+  │  - DDE / ODE Extraction - Leiden igraph Clustering       │
+  │  - OCR / Embeddings   - Local LLM Research Inference   │
+  └────────────────────────────────────────────────────────┘
+
+2.1 The Native Rust Core Daemon
+
+The Rust core daemon (compiled via Tauri v2) executes as a low-privilege
+background service. It manages system events, handles directory watching, and
+maintains local storage:
+
+  - Active Directory Watcher (notify crate): Provides cross-platform filesystem
+    notifications on directory modifications inside ~/Downloads and watched
+    workspaces.
+  - Active Window Focus Monitor (active-win-pos-rs crate): Logs window focus
+    states directly from OS APIs.
+  - Global Idle Monitor (user-idle crate): Measures keyboard and mouse idle
+    durations.
+  - Embedded Local Encrypted Database (rusqlite + SQLCipher + sqlite-vec + FTS5
+    extensions): Runs an embedded database instance with 256-bit AES encryption
+    at rest, executing SQL operations, full-text searches, and vector similarity
+    checks within a single-file structure.
+
+2.2 Python AI Sidecar Processes & Process Security Hardening
+
+AI pipelines run within isolated Python subprocesses managed dynamically by the
+Tauri host process. To eliminate elevation of privilege, sidecar hijacking, or
+process listing eavesdropping, the architecture enforces the following security
+standards:
+
+  - Standard Input (stdin) Token Delivery: The X-Chronos-Auth-Token must never
+    be stored in unprivileged local configuration files, environment variables,
+    or arguments passed during sidecar execution initialization. Upon spawning
+    each sidecar child process, the Rust daemon opens a secure standard input
+    pipe (Stdio::piped()) and writes the dynamically generated,
+    cryptographically random token directly to the child process's stdin. The
+    sidecar process must read this token from stdin and verify it in memory
+    before binding any socket or accepting localhost connections.
+  - Dynamic Port Negotiation: Sidecars must not use hardcoded or pre-configured
+    local ports. Instead, the Rust daemon requests dynamic, ephemeral local
+    ports from the OS kernel (binding to port 0 temporarily), releases them,
+    spawns the sidecar with instructions to bind to those specific ports, and
+    passes the negotiated port allocations via the secure stdin channel.
+  - Executable Hash Validation: To prevent DLL hijacking or executable
+    replacement, the Rust Core Daemon must calculate the SHA-256 hash of each
+    compiled sidecar binary on startup and compare it against a signed manifest
+    embedded during compiling. If any hash mismatch is detected, system startup
+    must immediately halt, logging an alert to the local event log.
+  - IPC Communication: Processes exchange data with the Rust daemon over
+    localhost loopback sockets (127.0.0.1) protected by the token verification
+    header (X-Chronos-Auth-Token) inside the HTTP header of every localhost
+    request.
+
+2.3 The SolidJS Desktop Companion Frontend
+
+The user interface is built using SolidJS and TypeScript, compiling to a tiny
+reactive client:
+
+  - Zero-Runtime Overhead: SolidJS compiles directly to fine-grained DOM
+    operations without utilizing a heavy Virtual DOM, ensuring the client's
+    background footprint remains below 40MB of RAM.
+  - Instant Panel Painting: Transition states, sliding sidebar panel renders,
+    and Command Center overlays display instantly when triggered.
+
+2.4 Decoupled Source Ingestion Adapter Layer & Fingerprinting
+
+To insulate core daemon logic from frequent web interface layout updates, all
+raw ingestion routes must implement the abstract interface:
+
+export interface IngestionPayload {
+    sourceUri: string;
+    sourceType: "WHATSAPP" | "CHATGPT" | "CLAUDE" | "GEMINI" | "PDF" | "EMAIL" | "GENERIC_DOM";
+    rawText: string;
+    extractedHtml?: string;
+    sessionHash: string;
+    timestamp: string;
+}
+
+export interface IIngestionAdapter {
+    targetDomainPattern: RegExp;
+    isMatch(url: string): boolean;
+    parsePayload(document: Document): IngestionPayload | null;
+}
+
+The system registers dedicated, decoupled adapter implementations
+(WhatsAppAdapter, ChatGPTAdapter, ClaudeAdapter, GeminiAdapter, and a fallback
+GenericDOMAdapter). If an adapter throws a parsing layout error (ERR-DOM-001),
+the ingestion worker isolates the failure, records the trace in event_log, and
+falls back to manual clipboard sync or raw text extraction.
+
+  - FR-1.6 DOM Fingerprint Versioning: To track platform layout drift
+    dynamically, the extension logs structural layout hashes during parsing
+    operations. Every capture attempts to validate key node arrangements,
+    writing the matching version, DOM signature, and error rate to
+    adapter_fingerprints. If the consecutive failure rate for a signature
+    exceeds 40% over a rolling 10-attempt window, the adapter disables the
+    broken selector branch and falls back to generic DOM parsing until an
+    updated adapter version is registered.
+  - Secure Fallback Mode: When transitioning to the generic DOM parsing
+    fallback, the adapter is strictly prohibited from executing inline scripts
+    or parsing hidden inputs, iframe scopes, or style tags. It must strictly
+    ingest visible plain-text nodes, safeguarding the ingestion stream from
+    client-side script exploits.
+
+3. Functional Requirements
+
+FR-1: Passive Multi-Channel Context Ingestion
+
+  - FR-1.1 Filesystem Monitor: The system must run an active background watcher
+    targeting the user's ~/Downloads and configured watch folders.
+  - FR-1.2 Automatic PDF/DOCX Parsing: When a new file is detected, the system
+    must trigger local text extraction. PDF text extraction must handle
+    multi-column layouts, identify milestones, assignments, invoices, and
+    deadlines, and index the extracted text inside the local database.
+  - FR-1.3 Screenshot & Image OCR: Newly discovered image formats (.png, .jpg)
+    must pass through a local, lightweight optical character recognition engine
+    to extract textual content.
+  - FR-1.4 WhatsApp Web DOM Observer: The browser extension content script must
+    monitor web.whatsapp.com for chat updates. It must parse text streams of
+    open threads to identify commitment markers, filtering out emoji sequences
+    and non-text elements.
+  - FR-1.5 Browser Tab Active Monitor: The system must periodically (every 5
+    minutes) cache the active tabs' metadata (Title, URL, access timestamp) to
+    maintain the developer's research footprint.
+  - FR-1.6 AI Chat Session Scraper: The browser extension must monitor active
+    tab interactions on supported AI domains (chatgpt.com, claude.ai,
+    gemini.google.com). It must parse active chat trees, logging raw context,
+    conversational prompts, generated code, and reference files to track
+    structural development.
+  - FR-1.7 Opportunity Detection Engine (ODE): The system must continuously
+    evaluate passive ingestion feeds (file system drops, newly opened browser
+    links, and message logs) to identify new commitment or project
+    opportunities:
+      - FR-1.7.1 Asset Evaluation: When a new document (e.g., a PDF titled
+        Assignment_3.pdf, a client brief, or a new GitHub repository clone) is
+        detected, the ODE calculates a classification score.
+      - FR-1.7.2 Opportunity Prompt: If the score indicates a new
+        project/commitment opportunity, the system bypasses automatic community
+        mapping and prompts the user with a notification card on the HUD: "New
+        Project Opportunity Detected. Create a tracked workspace?"
+
+FR-2: Project & Commitment Memory Engine (PCME)
+
+FR-2.1 Unassigned Commitment Inbox
+
+The PCME establishes Commitments as first-class entities. To eliminate orphan
+records, any ingested context node must be assigned to either an active
+commitment or the Unassigned Context Inbox (commitment_id is null). This
+provides an initial staging ground, preventing graph contamination before
+semantic associations are resolved.
+
+                      INBOX ASSOCIATION PIPELINE
+                      
+  [ New Ingested Asset ]
+            │
+            ▼
+  [ Project Resolution Engine ] ──► (Calculate Match Score)
+            │
+            ├─── (Score >= 0.80) ───► Attach to Project/Commitment
+            │
+            └─── (Score < 0.80)  ───► Route to Unassigned Context Inbox
+
+FR-2.2 Project Resolution Engine & Routing
+
+When a new context node (C_{\text{new}}) is ingested, the system bypasses
+expensive Leiden clustering runs. Instead, the engine calculates a Project Match
+Score (MS) against active projects and commitments based on similarity metrics:
+
+  - If MS \ge 0.80, the node is automatically routed to the target
+    commitment/project.
+  - If MS < 0.80, the node is routed to the Unassigned Context Inbox. Modularity
+    recalculation and community clustering runs are scheduled as lower-priority
+    background tasks.
+
+FR-2.3 Context Node Primitive & Schema Inheritance
+
+The system must model all ingested items as structured Context Nodes (C_i). To
+prevent database schema pollution at scale while maintaining normalized database
+properties, the database implements a strict relational inheritance pattern.
+Shared contextual tracking fields are stored within the parent context_nodes
+table, while specialized attributes are written to corresponding child extension
+tables:
+
+  - file_nodes: Caches local paths, absolute sizes, file extensions, and
+    modification times.
+  - message_nodes: Logs platform identifiers, sender identities, and thread
+    metadata.
+  - terminal_nodes: Captures shell environments, active directories, input
+    commands, and execution codes.
+  - url_nodes: Indexes domains, complete URLs, and parsed query parameter maps.
+
+FR-2.4 Scalable O(n \log n) Candidate Generation via sqlite-vec ANN
+
+To prevent performance degradation as the Context Graph scales, the system must
+avoid all global pairwise similarity calculations. For any newly generated
+Context Node C_{\text{new}}:
+
+1.  Semantic Index Match Query: The system must execute a local Approximate
+    Nearest Neighbor (ANN) index-guided search using sqlite-vec to retrieve only
+    the top K = 50 nearest semantic neighbors:
+    SELECT node_id, distance 
+    FROM context_embeddings 
+    WHERE embedding MATCH ?1 AND distance < 0.25 
+    ORDER BY distance LIMIT 50;
+2.  Neighbor Filtering: The engine must filter out any candidate nodes that have
+    decayed below the active relevance threshold (\tau_{\text{forget}} = 0.15).
+3.  Local Pairwise Recalculation: The system must compute edge weights W_{u,v}
+    only between C_{\text{new}} and the active candidate subset, reducing graph
+    insertion complexity from O(n^2) to O(n \log n).
+
+FR-2.5 Automatic Cross-Platform Thread Association
+
+The Memory Engine must link disparate conversations. If a user asks Claude about
+a problem, and later asks Gemini about the same problem, the engine must
+associate the conversations using a semantic vector similarity threshold
+(\text{Cosine Similarity} \ge 0.78) and write an association edge into the
+SQLite graph database.
+
+FR-2.6 Project Intelligence Layer (Semantic Leiden Clustering over igraph)
+
+Commitments and projects are mapped to dynamic spatial graph locations.
+
+  - FR-2.6.1 In-Memory igraph Projection: To prevent computational bottlenecks,
+    the local Python sidecar must project active SQLite node and edge records
+    into an in-memory igraph instance (implemented in C) every 30 minutes.
+  - FR-2.6.2 Edge Weighting Formulation: The weight of an association edge
+    between context nodes u and v is calculated using the following formula:
+
+W_{u,v} = \omega_{\text{sem}} \cdot S_{\text{cosine}}(E(C_u), E(C_v)) + \omega_{\text{src}} \cdot J(S_u, S_v) + \omega_{\text{temp}} \cdot \text{e}^{-\lambda \cdot |t_u - t_v|}
+
+Where:
+
+  - S_{\text{cosine}} \in [0, 1] is the cosine similarity of the local vector
+    embeddings of nodes u and v.
+  - J(S_u, S_v) \in [0, 1] is the Jaccard similarity of shared parent source
+    URIs retrieved from the source_provenance table:
+    J(S_u, S_v) = \frac{|\text{Sources}_u \cap \text{Sources}_v|}{|\text{Sources}_u \cup \text{Sources}_v|}
+  - |t_u - t_v| is the absolute time delta (expressed in hours) between the
+    creation timestamps of nodes u and v.
+  - \lambda is the temporal decay coefficient (default = 0.02).
+  - The default normalization weights are assigned as \omega_{\text{sem}} = 0.5,
+    \omega_{\text{src}} = 0.3, and \omega_{\text{temp}} = 0.2.
+  - FR-2.6.3 Incremental Leiden Partition Optimization: Rather than rebuilding
+    community divisions from a blank state on every execution sweep, the
+    in-memory C-core igraph engine must utilize the previous community
+    configuration as a warm-start seed partition. The Leiden algorithm
+    recalculates modularity shifts locally around newly added or modified
+    context nodes, significantly reducing computational overhead.
+  - FR-2.6.4 Membership Audit Trail: Any changes in node project/commitment
+    membership across clustering iterations must be logged to the
+    project_membership_history table to track evolution trends and prevent
+    indexing drift.
+
+FR-2.7 Project Supergraph Container Layer
+
+To prevent cognitive misalignment where Leiden community partitions split a
+single goal into multiple communities, the system must support Project
+Supergraph Containers.
+
+  - FR-2.7.1 Container Schema: A project node acts as a user-facing workspace
+    container that maps one or more semantic communities using the
+    project_community_map table.
+  - FR-2.7.2 Project Level Resolution: When executing CCE operations, the engine
+    resolves context at the Project Supergraph level rather than across
+    individual semantic communities.
+
+FR-2.8 Reversible Entity Resolution Layer (ERL)
+
+To prevent graph duplication and link fragmentation caused by minor lexical
+differences (e.g., "EthnoGen", "EthnoGen Nexus", "Project EthnoGen"), the system
+must process all incoming nodes through a background Entity Resolution Layer.
+
+  - FR-2.8.1 Multi-Modal Match Check: When a new entity or subject is detected,
+    the ERL executes a string-based (Jaro-Winkler similarity \ge 0.88) and
+    vector-based (cosine similarity \ge 0.85) check against the historical nodes
+    list.
+  - FR-2.8.2 Canonical Mapping: Matches are mapped back to a unified row in the
+    canonical_entities table, ensuring all project variations resolve to a
+    single, consistent structural record.
+  - FR-2.8.3 Reversible Merging: All consolidation actions must be reversible.
+    The system must write complete lineage modifications to the
+    entity_merge_history and entity_split_history tables, allowing the user to
+    split accidentally merged entities on the HUD.
+
+FR-2.9 Decision Conflict Detection (DCD) & Taxonomy
+
+The DCD engine must run periodic checks across same-project nodes to identify
+conflicting resolutions. Detected conflicts must be written to the database
+using the following explicit taxonomy:
+
+  - DIRECT_CONFLICT: Two nodes assert mutually exclusive paths (e.g., Django vs.
+    FastAPI backend).
+  - SOFT_CONFLICT: Sub-dependency mismatch or tooling divergence (e.g., SQLite
+    vs. pg).
+  - ALTERNATIVE_OPTION: User explores options concurrently without selecting a
+    primary path.
+  - OBSOLETE_DECISION: Newly extracted decision contradicts and replaces an
+    older decision.
+
+FR-3: Deadline & Commitment Discovery Engine (DDE)
+
+The system must run a dedicated analysis pipeline to discover timelines and
+expectations before manual user declaration:
+
+                  DEADLINE DISCOVERY PROCESS (DDE)
+                  
+  [ Raw Stream Ingestion ] 
+            │
+            ▼
+  [ Heuristic Selector & NLP ] ──► (Confidence Evaluation)
+            │
+            ├─── (Conf >= 0.85) ───► Write to `commitments` & Alert User (Toast)
+            │
+            ├─── (0.60 <= Conf < 0.85) ──► Write to `deadline_candidates` & HUD Card
+            │
+            └─── (Conf < 0.60) ───► Discard (Silent Log)
+
+  - FR-3.1 Automated Pipeline Extraction: The DDE must process text segments
+    extracted from the passive ingestion stream (FR-1) to isolate explicit and
+    implicit deadline statements (e.g., "submit by Friday," "due June 28,"
+    "closes at midnight").
+  - FR-3.2 Source Identification: The DDE must parse:
+      - WhatsApp Messages: Extract deadlines from direct inquiries or group
+        notices.
+      - PDF Files: Identify academic guidelines, project syllabus schedules, or
+        customer invoices dropped into watched paths.
+      - AI Tool Chat Exchanges: Analyze user-developer conversations within
+        active browser tabs to track implicit commitments.
+      - Emails: Scan body text for task dates and deliverables.
+  - FR-3.3 Extraction Registries: Extracted objects are directed to matching
+    validation states:
+      - deadline_candidates: Unprocessed deadlines with raw structural text.
+      - deliverable_candidates: Unconfirmed file requirements or specific output
+        tasks.
+      - commitment_candidates: Proposed high-level objectives.
+  - FR-3.4 Strict Multi-Tier Confidence Gates:
+      - FR-3.4.1 High Confidence (\text{Conf}_{\text{extract}} \ge 0.85):
+        Immediately logged as ACCEPTED in dcre_registry (and automatically maps
+        to active commitments). Triggers a Layer 1 System notification and
+        places a highlighted commitment card on the Sidebar.
+      - FR-3.4.2 Medium Confidence
+        (0.60 \le \text{Conf}_{\text{extract}} < 0.85): Logged as PENDING within
+        target candidate tables. The item is held silently in the database and
+        shown on the Sidebar under "Unprocessed Discoveries" for manual
+        confirmation.
+      - FR-3.4.3 Low Confidence (\text{Conf}_{\text{extract}} < 0.60): Discarded
+        immediately in-memory.
+
+FR-4: Cognitive Workload & Capacity Engine
+
+FR-4.1 Adaptive Workload Score (WS) Formulation
+
+The system must calculate a real-time Workload Score (WS) to model the user's
+cognitive burden:
+
+WS = \min \left( 100, \omega_1 \cdot N_{\text{active}} + \omega_2 \cdot H_{\text{imminent}} + \omega_3 \cdot R_{\text{recent}} \right)
+
+Where:
+
+  - N_{\text{active}} represents the total number of uncompleted commitments
+    tracked within the local database.
+  - H_{\text{imminent}} is the count of task deadlines expiring within the
+    next 24 hours.
+  - R_{\text{recent}} is the rate of commitments extracted per hour over the
+    current system session.
+  - The default weights are assigned as
+    \omega_1 = 5.0, \omega_2 = 15.0, \omega_3 = 10.0.
+
+FR-4.4 Personal Capacity Model (PCM) & Active Workspace Tracking
+
+The system must build an empirical model of the user's capacity and velocity
+instead of relying on static, generic estimates:
+
+  - FR-4.4.1 Velocity Tracking: The PCM monitors application focus events (from
+    active_window_logs and workspace_connector_registry files) to measure actual
+    task output:
+      - Coding Velocity: Line changes and modification rates inside watched IDE
+        workspaces.
+      - Writing Velocity: Character and page expansion rates in text editors and
+        documentation apps.
+  - FR-4.4.2 Interruption and Context Switch Modeling: The system tracks window
+    focus changes (N_{\text{switches}}) and global idle intervals to log the
+    frequency of context interruptions and the time required to resume
+    productive work.
+  - FR-4.4.3 Focus Hour Integration: The engine integrates daily and weekly
+    active intervals to estimate available focus hours
+    \tilde{H}_{\text{capacity}}(t).
+
+FR-4.5 Deliverability Prediction Engine (DPE)
+
+The DPE calculates completion feasibility metrics for active commitments:
+
+  - FR-4.5.1 Mathematical Probability Formulation (P(\text{success})): For each
+    active commitment, the engine computes a completion probability using
+    learned historical profiles:
+
+P(\text{success}) = \sigma \left( \gamma \cdot \left( \frac{\eta \cdot H_{\text{avail}}(\Delta T)}{E_{\text{req}} \cdot F_{\text{switch}}} - 1 \right) \right)
+
+Where:
+
+  - \sigma(x) = \frac{1}{1 + \text{e}^{-x}} is the standard sigmoid logistic
+    function.
+  - H_{\text{avail}}(\Delta T) = \int_{t_{\text{current}}}^{t_{\text{deadline}}} \tilde{H}_{\text{capacity}}(t) \, dt
+    is the integrated available focus hours within the remaining deadline window
+    (\Delta T = t_{\text{deadline}} - t_{\text{current}}), as modeled by the
+    PCM.
+  - E_{\text{req}} is the estimated required effort in hours.
+  - F_{\text{switch}} = 1 + \beta \cdot N_{\text{switches}} represents the
+    context-switching penalty coefficient.
+  - \eta is the learned velocity scaling factor (ratio of delivered vs.
+    estimated output).
+  - \gamma and \beta are tuning constants adjusted dynamically by the feedback
+    engine.
+  - FR-4.5.2 Auditing & Calibration Metrics: To ensure prediction accuracy, the
+    model is evaluated using the Brier Score (BS) and Expected Calibration Error
+    (ECE):
+    BS = \frac{1}{N} \sum_{i=1}^{N} \left( P_i(\text{success}) - o_i \right)^2
+    Where o_i \in \{0, 1\} represents the actual outcome of commitment i (1 if
+    completed before deadline, 0 if missed or manually abandoned). The system's
+    background optimization loop must adjust internal coefficients to minimize
+    the score, targeting BS \le 0.15 and ECE \le 0.15.
+
+FR-4.6 Schedule Drift Engine (SDE) & Schedule Collapse Recovery
+
+The SDE addresses timeline disruptions caused by unplanned user absence (e.g.,
+disappearing for 24-48 hours) or unexpected development friction:
+
+  - FR-4.6.1 Drift Metric (\mathcal{D}): The system continuously evaluates
+    schedule drift across all active commitments:
+    \mathcal{D} = \sum_{c \in \mathcal{C}_{\text{active}}} \max(0, t_{\text{current}} - t_{\text{scheduled\_start\_c}}) \cdot \mathbb{I}(c \text{ is unstarted})
+    Where \mathbb{I} is the indicator function showing if commitment c is
+    pending but has passed its scheduled start window.
+  - FR-4.6.2 Collapse Correction: If drift exceeds a safety threshold
+    (\mathcal{D} > \mathcal{D}_{\text{threshold}}), the schedule is flagged as
+    "Collapsed."
+  - FR-4.6.3 Plan Recalculation: The SDE automatically shifts start dates for
+    unstarted tasks, defers low-priority commitments without upcoming deadlines,
+    and updates completion probability estimates (P(\text{success})).
+  - FR-4.6.4 Dynamic Feasibility Updates: Upon user return, the system displays
+    a schedule update card on the HUD: "Timelines adjusted due to inactivity. 2
+    low-priority tasks deferred; feasibility metrics recalculated."
+
+FR-4.7 Closed-Loop User Feedback Learning Engine
+
+The system must maintain an sequential audit trail of all manual user
+adjustments (approvals, rejections, project splits, merges, or conflict
+overrides) in the event_log table.
+
+  - FR-4.7.1 Nightly Parameter Recalibration: Every 24 hours, a background
+    optimization routine must parse the logged event pairs to minimize the delta
+    between predicted task outcomes and actual user adjustments.
+  - FR-4.7.2 Nightly Gradient Bounding & Parameter Clamping: The learning
+    parameter updates
+    (\theta_{t+1} = \theta_t - \eta \cdot \nabla \mathcal{L}(\theta_t)) must use
+    a small learning rate (\eta \le 0.01). Weight parameter shifts must be
+    clamped within strict bounds (e.g., [0.01, 10.0]) to prevent anomalous
+    feedback loops from destabilizing prediction outputs.
+  - FR-4.7.3 Focus Switch Low-Pass Filtering: To prevent context-switching
+    tracking manipulation, if the context-switching rate (N_{\text{switches}})
+    exceeds 15 focus switches within a rolling 60-second window, the PCM
+    discards the interval as system noise, halting changes to the capacity
+    model.
+
+FR-5: Workspace Connector Framework
+
+To enable deep cognitive state tracking and eliminate re-entry lag, the system
+implements a native, decoupled editor integration framework.
+
+                      WORKSPACE CONNECTOR INTERFACE
+                      
+  [ Active IDE: VSCode / Cursor / PyCharm ]
+                    │
+                    ▼ (Local REST / WebSocket Loopback)
+  ┌────────────────────────────────────────────────────────┐
+  │                 IWORKSPACE_CONNECTOR INTERFACE         │
+  └─────────────────┬──────────────────────────────┬───────┘
+                    │                              │
+                    ▼                              ▼
+             [ Active Files ]               [ Cursor Lines ]
+
+  - FR-5.1 Abstraction Interface: Editor integrations must communicate with the
+    core daemon via a unified local interface:
+    export interface OpenFile {
+        filePath: string;
+        focusDurationSeconds: number;
+        lastAccessedAt: string;
+    }
+
+    export interface CursorPosition {
+        filePath: string;
+        line: number;
+        column: number;
+        surroundingContext: string; // Caches adjacent code lines
+    }
+
+    export interface IWorkspaceConnector {
+        editorId: "VSCODE" | "CURSOR" | "WINDSURF" | "PYCHARM" | "NEOVIM" | "ZED";
+        getWorkspaceState(): { activeProjectRoot: string; openTabs: string[] };
+        getOpenFiles(): OpenFile[];
+        getCursorPositions(): CursorPosition[];
+    }
+  - FR-5.2 Connector Registries: The system loads and manages active
+    integrations via the workspace_connector_registry table.
+      - Phase 1 (Integrated Release): Out-of-the-box extensions for VSCode,
+        Cursor, and Windsurf.
+      - Phase 2 (Subsequent Scope): Connectors for JetBrains PyCharm and
+        IntelliJ runtimes.
+      - Phase 3 (Community Extensions): Headless daemon integration hooks for
+        Neovim and Zed.
+
+FR-6: Context Continuation Engine (CCE)
+
+The CCE isolates context restoration workflows into three distinct operational
+modes:
+
+                          CCE OPERATIONAL MODES
+                          
+  ┌────────────────────────────────────────────────────────────┐
+  │ MODE A: PASSIVE BACKGROUND ASSISTANCE                      │
+  │ - Triggers only during physical absence (T_idle >= 20)     │
+  │ - Generates stubs & non-intrusive gap logs                 │
+  │ - Restricted strictly to `./chronos_staged/`               │
+  ├────────────────────────────────────────────────────────────┤
+  │ MODE B: EXPLICIT PROJECT CONTINUATION                      │
+  │ - Bypasses idle timers, opt-ins, and confidence gates      │
+  │ - Triggered directly by the "Continue Project" button      │
+  │ - Generates structural Project Continuation Snapshots      │
+  ├────────────────────────────────────────────────────────────┤
+  │ AUTONOMOUS RESEARCH CONTINUATION (ARC)                     │
+  │ - Active background research tasks during user absence     │
+  │ - Synthesizes context, docs, and papers                    │
+  │ - Stages `research_update.md` inside sandboxed environment │
+  └────────────────────────────────────────────────────────────┘
+
+FR-6.1 Mode A: Passive Background Assistance
+
+  - FR-6.1.1 Triggers: Fires when IC \ge 0.75,
+    T_{\text{idle}} \ge 20 \text{ minutes}, and "Ambient Workload" is toggled
+    ON.
+  - FR-6.1.2 Scope: Passively scans the active communities partition in SQLite
+    to detect information gaps, logs unresolved items inside knowledge_gaps, and
+    writes non-intrusive staged drafts inside the local ./chronos_staged/
+    folder.
+
+FR-6.2 Mode B: Explicit Project Continuation Mode
+
+Mode B bypasses idle constraints, opt-ins, and confidence thresholds. The user's
+selection of "Continue Project" inside the Command Center serves as direct,
+high-trust authorization to reconstruct the workspace.
+
+  - FR-6.2.0 Project-Scoped Retrieval Authority: The system treats the
+    activation of Mode B as explicit authorization to perform comprehensive
+    context retrieval. The engine is permitted to pull and process:
+      - All project-linked context nodes (including active, archived, and pruned
+        records).
+      - Associated local documents, downloads, and directory structures.
+      - Monitored browser sessions, terminal history logs, and active window
+        traces.
+      - Unstructured communications (WhatsApp, local emails) linked to the
+        active project tree.
+      - Prior workspace snapshots and draft files inside ./chronos_staged/.
+  - FR-6.2.1 State Reconstruction Workflow: Upon invocation, the system must
+    sequentially:
+    1.  Resolve the parent Project Container and retrieve all mapped context
+        nodes across nested communities.
+    2.  Extract active milestones, open decision conflicts, and current
+        workspace objectives.
+    3.  Compute and serialize a new Project Snapshot into the database.
+    4.  Generate a structured Context Reconstruction Narrative (FR-6.2.5) and a
+        Chronological Project Timeline (FR-6.2.6) to assist with context
+        restoration.
+    5.  Stage code drafts, plans, or documentation inside ./chronos_staged/.
+
+FR-6.2.5 Context Reconstruction Narrative Output
+
+The CCE must output a structured Markdown document (reconstruction_narrative.md)
+inside the local staging folder containing:
+
+  - Active Project Objective: Current focus of the active branch.
+  - Last Completed Milestones: Chronological summary of recently executed tasks
+    and files.
+  - Open Decisions & Risks: Extracted design questions, pending structural
+    trade-offs, and critical warnings.
+  - Knowledge Gaps & Conflicts: Outstanding dependencies or logical conflicts.
+  - Suggested Entry Point: A specific local workspace recommendation (e.g.,
+    "Open frontend/src/views/dashboard.tsx at line 218; resume JWT verification
+    middleware implementation").
+
+FR-6.2.6 Chronological Project Timeline
+
+The system must generate a chronologically ordered interactive timeline
+displaying:
+
+  - Major decision commits and changes.
+  - Task resolutions and structural milestones.
+  - Divergent conflict occurrences.
+  - Significant local file edits.
+  - Historical conversational turns.
+
+FR-6.2.7 Continuation Completeness Principle
+
+When the user triggers Explicit Project Continuation, the system prioritizes
+completeness of project reconstruction over conservative retrieval limits. The
+engine evaluates all associated historical and source indices to restore the
+user's cognitive state as accurately as possible.
+
+FR-6.5.1 Automated Project Snapshot Generation
+
+Each created snapshot must record structural properties of the project to allow
+the user to immediately resume work:
+
+interface ProjectSnapshot {
+    id: number;
+    projectId: number;
+    parentSnapshotId: number | null; // Pointer to enable snapshot diffing & history tracking
+    snapshotSummary: string;          // "Refactoring FastAPI auth database schema"
+    currentObjective: string;         // Re-entry goal parameter
+    lastKnownFocus: string;           // Precise code block, file, or chat section
+    nextEntryPoint: string;           // File path and line reference
+    openQuestionsJson: string;        // Array of unresolved design queries
+    activeArtifactsJson: string;      // Recently edited or generated staged file paths
+    openTasksJson: string;            // Active commitments array
+    activeDecisionsJson: string;      // Active design agreements
+    unresolvedConflictsJson: string;  // Open DCD warnings
+    workspaceStateJson: string;       // Active browser tabs, IDE states, open files, active URLs
+    generatedAt: string;              // ISO-8601 timestamp
+}
+
+This snapshot acts as a cognitive "save state" for the project.
+
+FR-6.5.2 Workspace State Capture & Replay
+
+The snapshotted workspace_state_json must serialize:
+
+  - Open browser tab URLs and search sequences.
+  - Active IDE workspace directories.
+  - Open local files and cursor lines.
+  - Recent terminal command logs.
+
+This data is used strictly to present reconstruction recommendations on the HUD
+and is not used for automated workspace adjustments.
+
+FR-6.5.3 Structural Snapshot Diff Viewer
+
+The Command Center interface must provide a visualization tool to compare
+successive entries in the project_snapshots table. The interface must display:
+
+  - State changes of active tasks (completed vs. added tasks).
+  - Additions or resolutions of decision conflicts.
+  - Differences in open questions and active files.
+
+FR-6.6 Autonomous Research Continuation (ARC) & Sandbox Hardening
+
+To advance work during user-absence windows, the engine supports sandboxed
+background agents:
+
+  - FR-6.6.1 Execution Triggers: When the global idle monitor registers
+    T_{\text{idle}} \ge 20 \text{ minutes}, the local sidecar can execute
+    background research tasks linked to open knowledge_gaps or active,
+    incomplete commitments.
+  - FR-6.6.2 Document Synthesis: The research process analyzes local context
+    embeddings, parses open documentation tabs, and synthesizes local documents
+    or cached reference links.
+  - FR-6.6.3 Staged Format Isolation: The ARC agent is strictly prohibited from
+    writing raw executable files (such as .js, .py, .rs, .sh) directly inside
+    active developer workspaces. All staged background assets must use inactive
+    formats (e.g., .chronos_draft or .txt) and must reside inside the sandboxed
+    hidden path ./chronos_staged/research/ to prevent automatic compiling,
+    execution, or indexing by IDE tooling.
+  - FR-6.6.4 Explicit User Renaming: To promote staged drafts to active work
+    directories, the user must click the dedicated "Approve" option in the HUD.
+    Upon approval, the Rust Core Daemon validates path constraints, renames the
+    target draft to its active execution format, and copies it to the production
+    directory.
+  - FR-6.6.5 Provenance Comment Staining: Every staged source draft written by
+    the ARC agent must append a standardized header block containing context
+    citations, the creation timestamp, and a clear warning designating the file
+    as untrusted, AI-generated code.
+  - FR-6.6.6 Delivery Card: Upon return, the HUD displays a "Research
+    Continuation Ready" card. The user can review the staged drafts and
+    authorize integration, plan generation, or code execution.
+
+FR-6.8 Context Decay & Lifecycle Engine
+
+To prevent database size inflation and eliminate outdated context noise, the
+system must continuously run a background Context Decay Engine.
+
+  - FR-6.8.1 Decay Mathematical Formulation: The relevance score
+    R_i(t) \in [0, 1.0] of context node C_i decays exponentially over time as
+    defined in Section 3.
+  - FR-6.8.2 Access Re-evaluation Trigger: If a user manually reopens, edits, or
+    references a context node (such as clicking the "Take Me Back" link), the
+    relevance resets: R_i(t) \leftarrow 1.0.
+  - FR-6.8.3 Context Pruning: If R_i(t) < \tau_{\text{forget}} (where
+    \tau_{\text{forget}} = 0.15), the context node is marked as PRUNED in the
+    database. Pruned nodes are automatically excluded from NetworkX/igraph
+    community clustering loops, maintaining high cluster quality.
+
+FR-6.8.4 Three-Tier Hybrid Memory Management
+
+To maintain system performance without losing access to historical data, the
+context lifecycle replaces binary pruning thresholds with a three-tier memory
+architecture:
+
+1.  Hot Memory (R_i(t) \ge 0.70): High-relevance nodes. These nodes actively
+    participate in background Leiden clustering and serve as prime inputs for
+    CCE reconstruction queries.
+2.  Warm Memory (0.15 \le R_i(t) < 0.70): Moderately decayed nodes. These are
+    excluded from regular community clustering sweeps to conserve local CPU
+    cycles but remain searchable during semantic vector searches (K=50).
+3.  Archived Memory (R_i(t) < 0.15): Low-relevance nodes. These are excluded
+    from standard searches and active cluster sweeps, but can be accessed during
+    Explicit Project Continuation (Mode B) searches.
+
+FR-6.8.5 Continuation Decay Override
+
+Under Explicit Project Continuation Mode, the CCE is authorized to bypass decay
+limits and access pruned nodes if their semantic similarity matches the active
+project supergraph. This ensures historical context remains accessible during
+reconstruction while preventing inactive nodes from cluttering daily community
+clustering runs.
+
+FR-7: Interactive Intercept HUD & Three-Layer UI
+
+The user interface operates as a Peripheral Desktop Runtime built with SolidJS
+and TypeScript, designed to minimize runtime overhead. The interface is
+organized into three distinct layers:
+
+  - FR-7.1 Layer 1: Native System Notification Toasts:
+      - FR-7.1.1 Target Alerts: Low-overhead, transient system notifications
+        (dispatched via the Tauri Notification API) trigger only when the system
+        discovers a high-confidence commitment
+        (\text{Conf}_{\text{extract}} \ge 0.85), alerts the user to an Overload
+        Risk (WS \ge 80), or signals the completion of a background draft stage.
+  - FR-7.2 Layer 2: Pinned Side Dock Panel (The Copilot Sidebar):
+      - FR-7.2.1 Real-Time HUD Monitoring: An auto-hiding or pinned desktop
+        drawer (sliding from the screen edge) provides a persistent display of
+        active commitments, current completion probability P(\text{success})
+        metrics, and recent decisions.
+      - FR-7.2.2 Context Trace Indicators: Hovering over a task or decision
+        reveals trace-back links to the original file path, WhatsApp contact
+        link, or source URL.
+  - FR-7.3 Layer 3: Command Center Overlay (Ctrl + Shift + Space):
+      - FR-7.3.1 Modal Window Execution: Triggered via a global system hotkey
+        (Ctrl + Shift + Space on Windows/Linux, Cmd + Shift + Space on macOS),
+        this centered, modal dashboard presents complete project dependency
+        trees, decision conflict graphs, and staged background artifacts.
+      - FR-7.3.2 Action Consent Gate: From within this view, the user must click
+        dedicated action buttons to authorize, edit, or reject staged file
+        integrations.
+  - FR-7.4 Hard Consent Boundary: The system contains no execution path, script
+    library, or API connector capable of running git push actions, firing
+    network payload requests, or performing workspace migrations without direct,
+    physical user selection of the corresponding authorization button.
+  - FR-7.5 Deliverability Warning Cards: When the DPE computes a completion
+    probability P(\text{success}) < 0.45 for any active commitment, the sidebar
+    displays a warning card: "Critical Schedule Risk: Probability of completing
+    [Commitment Title] before deadline is [X]% based on historical velocity.
+    Adjust schedule?"
+
+FR-8: Source Traceability & Origin Reconstruction
+
+To eliminate context reconstruction lag, the system must retain a trace-back
+route for every passively captured item:
+
+  - FR-8.1 Provenance Metadata Schema: The database must record a
+    SourceProvenance structure with each entry.
+  - FR-8.2 The "Take Me Back" Trigger: The HUD interface must provide a visible
+    reference trigger next to each task. When clicked, the system must execute
+    the appropriate target application or system call to open the source:
+      - For URLs: Open the system's default browser directly to the captured
+        session hash link.
+      - For PDF/DOCX: Open the default system file viewer highlighted at the
+        corresponding filesystem path.
+      - For WhatsApp: Open the default browser directed to the corresponding
+        contact thread URL on web.whatsapp.com.
+
+FR-9: Work Abandonment & Neglect Alerting
+
+  - FR-9.1 Context Decay Monitor: The system must periodically evaluate
+    uncompleted entries in the dcre_registry to compute elapsed duration since
+    capture.
+  - FR-9.2 Notification Triggering: When a task moves to ABANDONED_SUSPECT
+    status, the system must generate a transient, non-modal system notification
+    alert (Tier 1 Toast) prompting the user to either archive, extend, or
+    initiate drafting operations for the forgotten item.
+
+4. Non-Functional Requirements
+
+NFR-1: Local Isolation, Privacy, & LLM Configuration
+
+  - NFR-1.1 Private Data Boundaries: All ingestion pipelines, raw metadata, text
+    fragments, and parsing databases must remain local on the user's
+    workstation.
+  - NFR-1.2 Private Vector/Embedding Generation: Embedding calculations must run
+    locally using an embedded ONNX runtime, lightweight library (e.g., local
+    python engine using HuggingFace sentence-transformers), or a direct socket
+    interface to a local llama.cpp or Ollama container.
+  - NFR-1.3 Secure API Configuration: If the system is configured to connect to
+    cloud models (e.g., Gemini Pro API), outbound payloads must pass through a
+    strict regex-based and high-entropy scanner. All standard formats
+    representing API keys, passwords, bearer tokens, SSH RSA keys, and .env
+    formats must be redacted in memory before transit.
+
+NFR-1.4 Workspace Sensitivity Classifier (WSC) & Privacy Hardening
+
+To secure workstation metadata, active window inputs, file paths, and browser
+URLs, the WSC implements a multi-tiered filtering framework prior to any
+database write operations:
+
+  - NFR-1.4.1 Regex-Based Redaction Filter: All telemetry parameters must pass
+    through a regex-based parser that identifies and redacts credential
+    components, SSH keys, private keys, JWT formats, and OAuth authorization
+    headers. Redacted content is replaced with generic [REDACTED_SENSITIVE_DATA]
+    placeholders.
+  - NFR-1.4.2 Hybrid Local NER Classifier: Payloads must also be processed by a
+    local, quantized, ONNX-compiled Named Entity Recognition (NER) model (e.g.,
+    a lightweight DistilBERT variant) to detect and redact unformatted sensitive
+    personal information (including personal names, email structures, financial
+    figures, and medical details).
+  - NFR-1.4.3 Focus Tracker Blocklist: The native window monitor must maintain
+    an unalterable list of targeted applications (such as bitwarden, keepassxc,
+    or 1password) and sensitive browser domain structures (such as password
+    manager extension paths or secure banking nodes). Telemetry monitoring is
+    temporarily disabled while these apps are in focus.
+  - NFR-1.4.4 Vector Differential Privacy: To prevent vector inversion attacks
+    against the vector database (context_embeddings), the embedding sidecar
+    applies a localized differential privacy layer (\epsilon-DP) that adds
+    low-magnitude Gaussian noise to vector weights, preserving semantic search
+    properties while protecting original text coordinates from reconstruction.
+
+NFR-1.5 Embedding Model Migration Protocol
+
+To allow upgrading the local embedding pipeline (e.g., migrating from
+all-MiniLM-L6-v2 to a higher-dimensional model like bge-small) without causing
+system failures, the system enforces a strict vector rebuild protocol:
+
+  - NFR-1.5.1 Transition Tracking: When a model upgrade is initiated, the system
+    registers the new model in the embedding_models table and sets the status to
+    MIGRATING.
+  - NFR-1.5.2 Background Vector Regeneration: The embedding sidecar spawns a
+    background indexing thread to compute new vectors for existing context
+    nodes, writing them to a temporary virtual table context_embeddings_new.
+  - NFR-1.5.3 Atomic Swap: To prevent application lockups, search and community
+    clustering operations run on the legacy vector virtual table until the new
+    index is fully populated. Once completed, Tauri executes an atomic SQL swap,
+    updates the active model reference, and deprecates the old table.
+
+NFR-2: Performance & Workstation Resource Footprint
+
+  - NFR-2.1 CPU Utilization Limits: The background daemon (including directory
+    watchers and parsing workers) must not exceed a rolling 5% of total
+    workstation CPU consumption during idle tracking phases.
+  - NFR-2.2 Memory Envelope Boundaries: The memory footprint of the resident
+    desktop app (Tauri + local sidecar process) must remain below 350MB of RAM
+    during standard monitoring cycles.
+  - NFR-2.3 Process Priority Throttling: When CPU-heavy extraction operations
+    are running (such as OCR processing or local embedding calculations),
+    process execution priorities must be set to IDLE_PRIORITY_CLASS (on Windows)
+    or a nice level of 19 (on Unix/macOS) to prevent performance impact on the
+    user's foreground tasks.
+
+NFR-3: Parsing Fault Tolerance
+
+  - NFR-3.1 Layout Drift Recovery: If a parser failure (such as ERR-DOM-001)
+    occurs due to a frontend change on Claude or ChatGPT, the system must
+    isolate the active browser tab's parser thread, fall back immediately to
+    generic DOM paragraph parsing or manual clipboard scanning, write a
+    diagnostic trace, and keep the main daemon active.
+  - NFR-3.2 Corrupted Document Isolation: If a document added to the local
+    Downloads folder is corrupted, contains unreadable binary formats, or causes
+    an extraction timeout, the parsing worker must terminate the active
+    subprocess within 10 seconds, write a RECOVERY_STALLED entry in the
+    database, alert the user via a Tier 1 toast, and return to idle watching.
+
+NFR-3.3 Local Observability Subsystem
+
+To monitor system health and measure cognitive drift without compromising user
+privacy, the daemon must log telemetry metrics locally:
+
+  - NFR-3.3.1 Target Metrics: The system must record community drift rates, DCRE
+    precision, CCE success rates, average context reconstruction times
+    (T_{\text{recon}}), and adapter failure rates.
+  - NFR-3.3.2 Local Analytics Dashboard: These metrics are stored in a
+    diagnostic table and displayed on a local "Community Quality Dashboard"
+    inside the Command Center, helping the user audit the system's operational
+    efficiency.
+
+5. Data Models & Persistence (SQLite Schema v3.0)
+
+All local operations are committed to an embedded SQLCipher database configured
+with 256-bit AES encryption at rest, using a dynamically negotiated passphrase
+retrieved from the host OS keyring service during initialization.
+
+-- database/schema.sql
+PRAGMA foreign_keys = ON;
+PRAGMA journal_mode = WAL;
+PRAGMA synchronous = NORMAL;
+
+-- Immutable Event Sourcing Log capturing state history & user telemetry feedback
+CREATE TABLE IF NOT EXISTS event_log (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    entity_type         TEXT NOT NULL,                  -- COMMITMENT | CONTEXT_NODE | DCRE_ENTRY | DECISION_CONFLICT | PROJECT
+    entity_id           INTEGER NOT NULL,
+    event_type          TEXT NOT NULL,                  -- CREATE | STATUS_CHANGE | UPDATE_PPM | HUD_REJECTION | MERGE_PROJECTS | SCHEDULE_REPAIR
+    payload_json        TEXT,                           -- Full descriptive snapshot context
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Schema Migrations Registry to safely coordinate local modifications
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    version             TEXT PRIMARY KEY,
+    applied_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Local Embedding Model Registry to prevent query failures when switching models
+CREATE TABLE IF NOT EXISTS embedding_models (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    model_name          TEXT UNIQUE NOT NULL,           -- e.g., 'all-MiniLM-L6-v2'
+    dimensions          INTEGER NOT NULL DEFAULT 384,
+    quantization_type   TEXT NOT NULL DEFAULT 'FLOAT32',-- FLOAT32 | INT8 | BINARY
+    status              TEXT NOT NULL DEFAULT 'ACTIVE', -- ACTIVE | MIGRATING | DEPRECATED
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Project Containers (Optional supergraph containers to map multiple commitments)
+CREATE TABLE IF NOT EXISTS projects (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_name        TEXT UNIQUE NOT NULL,           -- e.g., 'Project EthnoGen'
+    completion_rate     REAL NOT NULL DEFAULT 0.0,      -- Numerical percentage metric
+    status              TEXT NOT NULL DEFAULT 'ACTIVE', -- ACTIVE | ARCHIVED | OVERLOAD_RISK
+    last_accessed_at    TEXT NOT NULL DEFAULT (datetime('now')), -- Updated on explicit continuation
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Root Entity Table: Commitments represent the core tracking baseline
+CREATE TABLE IF NOT EXISTS commitments (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id          INTEGER REFERENCES projects(id) ON DELETE SET NULL, -- Optional mapping to supergraph
+    title               TEXT NOT NULL,                  -- e.g., 'Submit Assignment 3'
+    status              TEXT NOT NULL DEFAULT 'ACTIVE', -- ACTIVE | IN_PROGRESS | RESOLVED | ABANDONED_SUSPECT
+    target_deadline     TEXT,                           -- Absolute ISO-8601 deadline timestamp
+    estimated_effort    REAL NOT NULL DEFAULT 1.0,      -- Estimated work effort (hours)
+    confidence_score    REAL NOT NULL DEFAULT 1.0,      -- Prediction validation rate
+    relevance_score     REAL NOT NULL DEFAULT 1.0,      -- Active lifecycle relevance (R_i)
+    last_referenced_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Semantic Communities dynamically resolved via Leiden clustering
+CREATE TABLE IF NOT EXISTS communities (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    community_name      TEXT UNIQUE NOT NULL,           -- e.g., 'Leiden_Cluster_41'
+    status              TEXT NOT NULL DEFAULT 'ACTIVE',
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Community Quality validation metrics over historical runs
+CREATE TABLE IF NOT EXISTS community_metrics (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    community_id        INTEGER REFERENCES communities(id) ON DELETE CASCADE,
+    modularity          REAL NOT NULL,                  -- Modularity partition quality metric
+    conductance         REAL NOT NULL,                  -- Escape probability evaluation
+    density             REAL NOT NULL,                  -- Internal node link ratio
+    silhouette_score    REAL,                           -- Semantic partition validation
+    recorded_at         TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Mapping relationship between Projects (Supergraphs) and Communities (Subgraphs)
+CREATE TABLE IF NOT EXISTS project_community_map (
+    project_id          INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+    community_id        INTEGER REFERENCES communities(id) ON DELETE CASCADE,
+    PRIMARY KEY (project_id, community_id)
+);
+
+-- Canonical Entity Resolution directory to group variations (ERL)
+CREATE TABLE IF NOT EXISTS canonical_entities (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    canonical_name      TEXT UNIQUE NOT NULL,           -- Resolved name, e.g., 'EthnoGen'
+    entity_type         TEXT NOT NULL,                  -- TECHNOLOGY | CONCEPT | DIRECTORY | PERSON
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Active workspace connector plugins registry (VSCode, PyCharm, Zed)
+CREATE TABLE IF NOT EXISTS workspace_connector_registry (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    connector_id        TEXT UNIQUE NOT NULL,           -- VSCODE | CURSOR | PYCHARM | NEOVIM
+    status              TEXT NOT NULL DEFAULT 'ACTIVE', -- ACTIVE | INACTIVE
+    last_pulsed_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Primary Context Node primitive representing all raw passive ingestion entities
+CREATE TABLE IF NOT EXISTS context_nodes (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    community_id        INTEGER REFERENCES communities(id) ON DELETE SET NULL,
+    canonical_id        INTEGER REFERENCES canonical_entities(id) ON DELETE SET NULL,
+    entity_key          TEXT UNIQUE NOT NULL,           -- e.g., 'FILE:/path/to/assignment1.pdf' or 'URL:chatgpt.com/c/hash'
+    entity_type         TEXT NOT NULL,                  -- FILE | MESSAGE | TERMINAL | URL | EMAIL | AIC_CHAT
+    display_name        TEXT NOT NULL,
+    relevance_score     REAL NOT NULL DEFAULT 1.0,      -- Passive decay tracking relevance (R_i)
+    last_referenced_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Mapping relationship between Commitments (Root) and Context Nodes (Many-to-Many Context Graph)
+CREATE TABLE IF NOT EXISTS commitment_context_map (
+    commitment_id       INTEGER REFERENCES commitments(id) ON DELETE CASCADE,
+    node_id             INTEGER REFERENCES context_nodes(id) ON DELETE CASCADE,
+    PRIMARY KEY (commitment_id, node_id)
+);
+
+-- Context Node Extension: Filesystem Specific Nodes
+CREATE TABLE IF NOT EXISTS file_nodes (
+    node_id             INTEGER PRIMARY KEY REFERENCES context_nodes(id) ON DELETE CASCADE,
+    file_path           TEXT UNIQUE NOT NULL,
+    file_size           INTEGER NOT NULL,
+    file_extension      TEXT NOT NULL,
+    last_modified_at    TEXT NOT NULL
+);
+
+-- Context Node Extension: Communication Specific Nodes
+CREATE TABLE IF NOT EXISTS message_nodes (
+    node_id             INTEGER PRIMARY KEY REFERENCES context_nodes(id) ON DELETE CASCADE,
+    platform            TEXT NOT NULL,                  -- WHATSAPP | SLACK | TEAMS | EMAIL
+    sender              TEXT NOT NULL,
+    chat_id             TEXT NOT NULL,
+    thread_timestamp    TEXT NOT NULL
+);
+
+-- Context Node Extension: Terminal Execution Specific Nodes
+CREATE TABLE IF NOT EXISTS terminal_nodes (
+    node_id             INTEGER PRIMARY KEY REFERENCES context_nodes(id) ON DELETE CASCADE,
+    shell_type          TEXT NOT NULL,                  -- POWERSHELL | BASH | ZSH
+    working_directory   TEXT NOT NULL,
+    command_string      TEXT NOT NULL,
+    return_code         INTEGER
+);
+
+-- Context Node Extension: URL/Browser Navigation Specific Nodes
+CREATE TABLE IF NOT EXISTS url_nodes (
+    node_id             INTEGER PRIMARY KEY REFERENCES context_nodes(id) ON DELETE CASCADE,
+    domain              TEXT NOT NULL,
+    full_url            TEXT NOT NULL,
+    query_params_json   TEXT
+);
+
+-- Traceability source provenance metadata records linked directly to the nodes
+CREATE TABLE IF NOT EXISTS source_provenance (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    node_id             INTEGER REFERENCES context_nodes(id) ON DELETE CASCADE,
+    source_type         TEXT NOT NULL,                  -- WHATSAPP | PDF | EMAIL | AI_CHAT | BROWSER_TAB | LOCAL_FILE
+    source_uri          TEXT NOT NULL,                  -- Absolute local path, URL, or deep chat link
+    source_hash         TEXT,                           -- MD5 or SHA-256 validator for updates
+    captured_at         TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Historical Audit log tracking node community changes over clustering runs
+CREATE TABLE IF NOT EXISTS project_membership_history (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    node_id             INTEGER REFERENCES context_nodes(id) ON DELETE CASCADE,
+    old_community_id    INTEGER REFERENCES communities(id) ON DELETE SET NULL,
+    new_community_id    INTEGER REFERENCES communities(id) ON DELETE SET NULL,
+    confidence          REAL NOT NULL DEFAULT 1.0,      -- Modularity score assigned during Leiden run
+    changed_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Web DOM Fingerprint validation database to trace adapter drift & target stability
+CREATE TABLE IF NOT EXISTS adapter_fingerprints (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    adapter_name        TEXT NOT NULL,                  -- e.g., 'WhatsAppAdapter'
+    adapter_version     TEXT NOT NULL,                  -- Matches package code version
+    dom_signature       TEXT NOT NULL,                  -- Structural selector hash tree
+    failure_rate        REAL NOT NULL DEFAULT 0.0,      -- Consecutive fail ratio
+    last_failed_at      TEXT,
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Native sqlite-vec virtual table for local embedding vector lookups (dimensions: 384)
+CREATE VIRTUAL TABLE IF NOT EXISTS context_embeddings USING vec0(
+    node_id             INTEGER PRIMARY KEY,
+    embedding           FLOAT[384] distance_metric=cosine
+);
+
+-- FTS5 Full-Text Search virtual table to enable zero-overhead semantic keyword lookups
+CREATE VIRTUAL TABLE IF NOT EXISTS context_fts USING fts5(
+    node_id UNINDEXED,
+    content,
+    tokenize="unicode61"
+);
+
+-- Directional relationships mapping the project context
+CREATE TABLE IF NOT EXISTS graph_edges (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    source_node_id      INTEGER REFERENCES context_nodes(id) ON DELETE CASCADE,
+    target_node_id      INTEGER REFERENCES context_nodes(id) ON DELETE CASCADE,
+    relationship_type   TEXT NOT NULL,                  -- DEPENDS_ON | EXPLAINS | DISCUSSES | CONFLICTS_WITH
+    edge_weight         REAL NOT NULL DEFAULT 0.0,      -- Weighted parameter W_uv
+    created_at          TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(source_node_id, target_node_id, relationship_type)
+);
+
+-- Consolidated DCRE Registry (Decisions, Commitments, Risks) linked back to context node
+CREATE TABLE IF NOT EXISTS dcre_registry (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    associated_node_id  INTEGER REFERENCES context_nodes(id) ON DELETE CASCADE,
+    entry_type          TEXT NOT NULL,                  -- DECISION | COMMITMENT | RISK
+    summary             TEXT NOT NULL,
+    details             TEXT,
+    confidence_score    REAL NOT NULL DEFAULT 1.0,      -- Extraction confidence Gating Metric
+    target_deadline     TEXT,                           -- Absolute ISO-8601 string, if parsed
+    risk_level          TEXT NOT NULL DEFAULT 'NONE',   -- NONE | LOW | MEDIUM | HIGH | CRITICAL
+    status              TEXT NOT NULL DEFAULT 'PENDING',-- PENDING | IN_PROGRESS | RESOLVED | ABANDONED_SUSPECT | RECOVERY_STALLED | PENDING_VERIFICATION
+    session_hash        TEXT,                           
+    origin_source       TEXT NOT NULL,                  -- WHATSAPP | PDF | EMAIL | AI_CHAT | MANUAL
+    origin_uri          TEXT NOT NULL,                  -- URL or filepath trace-back target
+    captured_snippet    TEXT NOT NULL,                  -- Exact textual extraction trigger
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- System-discovered Deadline Candidates awaiting tracking confirmation
+CREATE TABLE IF NOT EXISTS deadline_candidates (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    source_type         TEXT NOT NULL,                  -- WHATSAPP | PDF | EMAIL | AI_CHAT
+    source_uri          TEXT NOT NULL,                  -- Filepath, browser link, deep chat URL
+    extracted_title     TEXT NOT NULL,                  -- Computed context description
+    extracted_deadline  TEXT NOT NULL,                  -- ISO-8601 format representation
+    confidence          REAL NOT NULL DEFAULT 0.0,      -- Algorithmic confidence metric
+    status              TEXT NOT NULL DEFAULT 'PENDING',-- PENDING | TRACKED | IGNORED
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- System-discovered Deliverable Candidates awaiting tracking confirmation
+CREATE TABLE IF NOT EXISTS deliverable_candidates (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    commitment_id       INTEGER REFERENCES commitments(id) ON DELETE CASCADE,
+    extracted_title     TEXT NOT NULL,
+    source_uri          TEXT NOT NULL,
+    confidence          REAL NOT NULL DEFAULT 0.0,
+    status              TEXT NOT NULL DEFAULT 'PENDING',-- PENDING | STAGED | IGNORED
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Systematic Knowledge Gaps uncovered in the Project Memory Graph
+CREATE TABLE IF NOT EXISTS knowledge_gaps (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id          INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+    gap_description     TEXT NOT NULL,
+    confidence          REAL NOT NULL DEFAULT 1.0,
+    status              TEXT NOT NULL DEFAULT 'UNRESOLVED', -- UNRESOLVED | STAGED | RESOLVED
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Detected architectural or task scheduling conflicts
+CREATE TABLE IF NOT EXISTS decision_conflicts (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    dcre_entry_a_id     INTEGER REFERENCES dcre_registry(id) ON DELETE CASCADE,
+    dcre_entry_b_id     INTEGER REFERENCES dcre_registry(id) ON DELETE CASCADE,
+    conflict_summary    TEXT NOT NULL,
+    conflict_type       TEXT NOT NULL DEFAULT 'DIRECT_CONFLICT', -- DIRECT_CONFLICT | SOFT_CONFLICT | ALTERNATIVE_OPTION | OBSOLETE_DECISION
+    status              TEXT NOT NULL DEFAULT 'UNRESOLVED', -- UNRESOLVED | RESOLVED_A | RESOLVED_B | RESOLVED_MERGED
+    resolved_at         TEXT,
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Serialized cognitive save state snapshots generated under Explicit Project Continuation Mode
+CREATE TABLE IF NOT EXISTS project_snapshots (
+    id                          INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id                  INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+    parent_snapshot_id          INTEGER REFERENCES project_snapshots(id) ON DELETE SET NULL, -- Pointer to map snapshot lineage
+    snapshot_summary            TEXT NOT NULL,                  -- "Reconstructed auth middleware development"
+    current_objective           TEXT NOT NULL,                  -- Re-entry goal parameter
+    last_known_focus            TEXT NOT NULL,                  -- Focus segment cache
+    next_entry_point            TEXT NOT NULL,                  -- Target file path + line reference
+    open_questions_json         TEXT NOT NULL,                  -- Serialized array of design blockers
+    active_artifacts_json       TEXT NOT NULL,                  -- Serialized recently modified code files
+    open_tasks_json             TEXT NOT NULL,                  -- Serialized active commitments array
+    active_decisions_json       TEXT NOT NULL,                  -- Serialized active design agreements array
+    unresolved_conflicts_json   TEXT NOT NULL,                  -- Serialized outstanding conflicts array
+    workspace_state_json        TEXT NOT NULL,                  -- Serialized active browser tabs, terminal, and IDE states
+    embedding_summary           TEXT,                           -- Vector representation of snapshot context
+    generated_at                TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Tracking of background staged items
+CREATE TABLE IF NOT EXISTS staged_drafts (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    associated_dcre_id  INTEGER REFERENCES dcre_registry(id) ON DELETE SET NULL,
+    target_file_path    TEXT NOT NULL,                  -- Restricted to ./chronos_staged/
+    draft_type          TEXT NOT NULL,                  -- CODE_STUB | DOC_OUTLINE | EMAIL_DRAFT | RESEARCH_DIGEST
+    intent_score        REAL NOT NULL DEFAULT 0.0,
+    status              TEXT NOT NULL DEFAULT 'STAGED', -- STAGED | APPROVED | REJECTED
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Verification citation entries linked to background staged drafts
+CREATE TABLE IF NOT EXISTS research_sources (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    staged_draft_id     INTEGER REFERENCES staged_drafts(id) ON DELETE CASCADE,
+    source_title        TEXT NOT NULL,
+    source_uri          TEXT NOT NULL,                  -- Deep tracing reference URL or file path
+    citation_snippet    TEXT,                           -- Context snippet referenced
+    relevance_score     REAL NOT NULL DEFAULT 1.0,      -- Score sorting relevance of citation source
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- PPM (Personal Productivity Model) profiles & patterns
+CREATE TABLE IF NOT EXISTS user_productivity_profiles (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    day_of_week         INTEGER NOT NULL,               -- 0 (Sunday) to 6 (Saturday)
+    hour_of_day         INTEGER NOT NULL,               -- 0 to 23
+    learned_capacity    REAL NOT NULL DEFAULT 2.7,      -- Rolling calculated work hour availability
+    coding_velocity     REAL NOT NULL DEFAULT 0.0,      -- Estimated lines edited/hour
+    writing_velocity    REAL NOT NULL DEFAULT 0.0,      -- Estimated characters/hour
+    interruption_rate   REAL NOT NULL DEFAULT 0.0,      -- Focus switches/hour
+    recovery_delay_sec  INTEGER NOT NULL DEFAULT 300,   -- Resumption delay interval
+    updated_at          TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(day_of_week, hour_of_day)
+);
+
+-- Active Foreground Window telemetry logging table for focus evaluation
+CREATE TABLE IF NOT EXISTS active_window_logs (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    process_name        TEXT NOT NULL,                  -- e.g., 'code.exe' or 'Terminal'
+    window_title        TEXT NOT NULL,                  -- Raw active header title
+    duration_seconds    INTEGER NOT NULL DEFAULT 10,
+    recorded_at         TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_cmt_proj         ON commitments(project_id);
+CREATE INDEX IF NOT EXISTS idx_cmt_relevance    ON commitments(relevance_score);
+CREATE INDEX IF NOT EXISTS idx_cmt_deadline     ON commitments(target_deadline);
+CREATE INDEX IF NOT EXISTS idx_cn_comm          ON context_nodes(community_id);
+CREATE INDEX IF NOT EXISTS idx_cn_relevance     ON context_nodes(relevance_score);
+CREATE INDEX IF NOT EXISTS idx_cn_type          ON context_nodes(entity_type);
+CREATE INDEX IF NOT EXISTS idx_cn_ref           ON context_nodes(last_referenced_at);
+CREATE INDEX IF NOT EXISTS idx_ccm_cmt          ON commitment_context_map(commitment_id);
+CREATE INDEX IF NOT EXISTS idx_dcre_status      ON dcre_registry(status);
+CREATE INDEX IF NOT EXISTS idx_dcre_deadline    ON dcre_registry(target_deadline);
+CREATE INDEX IF NOT EXISTS idx_dc_status        ON decision_conflicts(status);
+CREATE INDEX IF NOT EXISTS idx_sd_status        ON staged_drafts(status);
+CREATE INDEX IF NOT EXISTS idx_el_entity        ON event_log(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_awl_time         ON active_window_logs(recorded_at);
+CREATE INDEX IF NOT EXISTS idx_sp_node          ON source_provenance(node_id);
+CREATE INDEX IF NOT EXISTS idx_pmh_node         ON project_membership_history(node_id);
+CREATE INDEX IF NOT EXISTS idx_ps_proj          ON project_snapshots(project_id);
+CREATE INDEX IF NOT EXISTS idx_pcm_proj         ON project_community_map(project_id);
+CREATE INDEX IF NOT EXISTS idx_af_adapt         ON adapter_fingerprints(adapter_name);
+CREATE INDEX IF NOT EXISTS idx_cm_comm          ON community_metrics(community_id);
+CREATE INDEX IF NOT EXISTS idx_dc_deadline      ON deadline_candidates(extracted_deadline);
+CREATE INDEX IF NOT EXISTS idx_dlc_cmt          ON deliverable_candidates(commitment_id);
+
+6. Risk, Autonomy, & Security Controls
+
+6.1 Gated Action Level Matrix
+
+The table below specifies security boundaries and execution permissions within
+the runtime engine:
+
+| System Action                                    | Authorization Level      | Technical Restriction                                                                                                                                                                          |
+| :----------------------------------------------- | :----------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Parsing & Memory Ingestion**                   | Fully Autonomous         | Runs silently in local background thread.                                                                                                                                                      |
+| **Conflict & Overload Computation**              | Fully Autonomous         | Runs local background evaluation loop, writing to database.                                                                                                                                    |
+| **Commitment / Opportunity Discovery (ODE/DDE)** | Fully Autonomous         | Logs candidate items and displays non-intrusive target HUD cards. No commitment or project container creation without manual click.                                                            |
+| **Assistive Drafting (Mode A)**                  | Conditionally Autonomous | Requires computed score $IC \ge 0.75$, physical absence ($T_{\text{idle}} \ge 20 \text{ minutes}$), and active opt-in. Execution is restricted to `./chronos_staged/`.                         |
+| **Project State Reconstruction (Mode B)**        | Manually Authorized      | Triggered by the explicit execution of "Continue Project". Allows read, trace-back retrieval, and snapshot generation of project context, writing continuation files into `./chronos_staged/`. |
+| **Autonomous Research Agent (ARC)**              | Conditionally Autonomous | Triggered when $T_{\text{idle}} \ge 20 \text{ minutes}$. Queries local embeddings, synthesizes documents, and writes summary drafts strictly within `./chronos_staged/research/`.              |
+| **File Creation outside Sandbox**                | Hard Blocked             | OS-level sandbox container constraints or strict subpath path check functions throw exceptions.                                                                                                |
+| **Git Push to Branch Head**                      | Explicitly Gated         | Blocked. Requires physical user validation on HUD and direct click execution.                                                                                                                  |
+| **External Web/API Submits**                     | Hard Blocked             | Network call permissions are omitted in Manifest V3 configurations. Local socket blocks outbound routes.                                                                                       |
+
+6.2 Protection Against Indirect Prompt Injection
+
+To prevent malicious instructions inside ingested documents from compromising
+the local workstation:
+
+  - FR-6.2.1 Structural Prompt Delimitation: All untrusted parsed strings (e.g.,
+    from browser tabs, local files, messaging feeds) must be enclosed inside
+    structural XML-style boundaries using random salting hashes regenerated
+    dynamically per invocation. The core LLM system instructions must be written
+    outside this variable block, and JSON schemas must be strictly enforced on
+    the inference parser to prevent instructions inside the data payload from
+    overriding processing directives.
+  - FR-6.2.2 System Instruction Gating: The DDE must process raw data segments
+    through a preliminary validation layer before creating task entries.
+    Payloads containing imperative command verbs or known override instructions
+    (e.g., "SYSTEM UPDATE", "IGNORE PREVIOUS", "SET STATUS") must be flagged as
+    SUSPECTED_INJECTION, quarantining the entry in deadline_candidates for
+    audit.
+  - FR-6.2.3 Redaction Filter: The system scanner runs in-memory text scrubbing
+    on all ingested payloads, filtering out patterns resembling passwords,
+    private keys, API keys, and environment variables before committing the text
+    to the database or passing it to local embedding models.
+
+6.3 Tauri Sidecar Process Security Containment
+
+Because the execution sidecar contains Python-based workers, execution must be
+constrained:
+
+  - FR-6.3.1 Static Port Communication: Sidecar processes communicate over
+    loopback adapters (127.0.0.1) secured by cryptographic verification headers
+    (X-Chronos-Auth-Token) generated at startup.
+  - FR-6.3.2 Restricted Resource Execution Policy: Sidecar processes run as
+    low-privilege subprocesses under active platform constraints (AppContainer
+    on Windows, sandboxed execution configurations on macOS). Outbound remote
+    socket connections are blocked by active loopback routing constraints.
+
+7. Success Metrics & Validation Hypotheses
+
+This study evaluates three primary pairs of hypotheses, prioritizing Context
+Reconstruction Time (T_{\text{recon}}) over simple task quantities to validate
+the core problem definition:
+
+Hypothesis 1 (Context Reconstruction Efficiency - RQ1)
+
+The primary metric evaluating the system's contribution is T_{\text{recon}} (the
+temporal gap between user return and baseline-matched productivity), validating
+the combination of Passive Context Acquisition, Project Supergraph
+Containerization, and the Context Continuation Engine.
+
+  - Null Hypothesis (H_{01}): Automated commitment clustering and contextual
+    tracing do not reduce the average context reconstruction lag
+    (T_{\text{recon}}) when returning to a commitment after an interruption.
+    H_{01}: \mu_{T_{\text{recon, Treatment}}} \ge \mu_{T_{\text{recon, Control}}}
+  - Alternative Hypothesis (H_{11}): Automated commitment clustering and
+    contextual tracing reduce the average context reconstruction lag by at
+    least 60%.
+    H_{11}: \mu_{T_{\text{recon, Treatment}}} \le 0.40 \times \mu_{T_{\text{recon, Control}}}
+
+Hypothesis 2 (Deliverability Prediction Accuracy - RQ2)
+
+  - Null Hypothesis (H_{02}): The Deliverability Predictor's estimated
+    P(\text{success}) metric fails to achieve an Expected Calibration Error
+    (ECE) of \le 0.15 when evaluated against actual retrospective project
+    deadline outcomes. H_{02}: ECE_{\text{predictor}} > 0.15
+  - Alternative Hypothesis (H_{12}): The Deliverability Predictor's estimated
+    P(\text{success}) metric achieves an Expected Calibration Error of
+    ECE_{\text{predictor}} \le 0.15 on tracked projects.
+    H_{12}: ECE_{\text{predictor}} \le 0.15
+
+Hypothesis 3 (Adaptive Workload Estimations - RQ3)
+
+  - Null Hypothesis (H_{03}): Utilizing dynamic capacity parameters and schedule
+    drift corrections does not reduce the variance between estimated commitment
+    completion timelines and actual completion times compared to static working
+    capacity estimations.
+    H_{03}: \sigma^2_{\text{error, Treatment}} \ge \sigma^2_{\text{error, Control}}
+  - Alternative Hypothesis (H_{13}): Utilizing dynamic capacity parameters
+    reduces the timeline variance by at least 30%.
+    H_{13}: \sigma^2_{\text{error, Treatment}} \le 0.70 \times \sigma^2_{\text{error, Control}}

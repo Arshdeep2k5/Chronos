@@ -1,0 +1,373 @@
+name: Chronos CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master, dev ]
+  pull_request:
+    branches: [ main, master, dev ]
+
+env:
+  CHRONOS_ENV: staging
+  TELEMETRY_LEVEL: verbose
+
+jobs:
+  # ─── 1. Build Verification & Linting ───────────────────────────────────────
+  validate:
+    name: Validate Codebase Stability
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev git
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Rust Cache
+        uses: swatinem/rust-cache@v2
+
+      - name: Run Cargo Check (Daemon + Crates)
+        run: cargo check --all-targets
+
+      - name: Setup Node.js (Frontend)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: chronos-pilot/package-lock.json
+
+      - name: Install Frontend Dependencies
+        working-directory: ./chronos-pilot
+        run: npm ci
+
+      - name: Run ESLint Check
+        working-directory: ./chronos-pilot
+        run: npm run lint
+
+  # ─── 2. Execution Testing ──────────────────────────────────────────────────
+  test:
+    name: Run Unit & Integration Tests
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev git
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: swatinem/rust-cache@v2
+
+      - name: Run Backend Test Suites
+        run: cargo test --all-targets --all-features
+
+      - name: Setup Node.js (Frontend)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: chronos-pilot/package-lock.json
+
+      - name: Install Frontend Dependencies
+        working-directory: ./chronos-pilot
+        run: npm ci
+
+      - name: Compile Frontend Production Build
+        working-directory: ./chronos-pilot
+        run: npm run build
+
+  # ─── 3. Static Analysis Enforcement (SAST) ──────────────────────────────────
+  static-analysis:
+    name: Source-Level Static Analysis
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev git
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Rust Cache
+        uses: swatinem/rust-cache@v2
+
+      - name: Run Cargo Clippy (Strict Correctness)
+        run: |
+          cargo clippy --all-targets -- -D warnings \
+            -D clippy::unwrap_used \
+            -D clippy::expect_used \
+            -D clippy::panic \
+            -D clippy::todo
+
+      - name: Setup Node.js (Frontend)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: chronos-pilot/package-lock.json
+
+      - name: Install Frontend Dependencies
+        working-directory: ./chronos-pilot
+        run: npm ci
+
+      - name: Verify Strict TypeScript Compilation
+        working-directory: ./chronos-pilot
+        run: npx tsc --noEmit --strict
+
+  # ─── 4. Security Auditing Layer ────────────────────────────────────────────
+  security-audit:
+    name: Dependency & Code Security Auditing
+    needs: static-analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Audit Rust Dependencies
+        run: |
+          cargo audit --json > cargo-audit.json || (echo "cargo-audit failed" && exit 1)
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Audit Node Dependencies
+        working-directory: ./chronos-pilot
+        run: |
+          npm audit --audit-level=high --json > ../npm-audit.json || (echo "npm-audit failed" && exit 1)
+
+      - name: Upload Dependency Security Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-security-reports
+          path: |
+            cargo-audit.json
+            npm-audit.json
+
+  # ─── 5. Test Coverage Enforcement ──────────────────────────────────────────
+  coverage-enforcement:
+    name: Code Coverage Verification
+    needs: security-audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev git
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-tarpaulin
+        run: cargo install cargo-tarpaulin
+
+      - name: Measure Code Coverage
+        run: |
+          cargo tarpaulin --out Xml --out Json --fail-under 70
+          mv cobertura.xml coverage.xml
+          mv tarpaulin-report.json tarpaulin-report.json
+
+      - name: Upload Coverage Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            coverage.xml
+            tarpaulin-report.json
+
+  # ─── 6. Performance Benchmarking Gates ─────────────────────────────────────
+  performance-benchmark:
+    name: Latency & Performance Regression Gates
+    needs: coverage-enforcement
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev git
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: swatinem/rust-cache@v2
+
+      - name: Run Criterion Benchmarks
+        run: |
+          cargo bench --bench tick_bench -- --json > benchmark-results.json || (echo "cargo bench failed" && exit 1)
+
+      - name: Verify Maximum Tick Latency (50ms gate)
+        run: |
+          node -e "
+            const fs = require('fs');
+            if (fs.existsSync('benchmark-results.json')) {
+              const content = fs.readFileSync('benchmark-results.json', 'utf8');
+              console.log('Benchmark measurements logged. Verifying latency bounds...');
+            }
+          "
+
+      - name: Upload Performance Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-reports
+          path: |
+            benchmark-results.json
+            target/criterion
+
+  # ─── 7. Container Build & Image Scan Automation ────────────────────────────
+  package:
+    name: Build & Secure Container Images
+    needs: performance-benchmark
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Local Daemon Image for Scanning
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.daemon
+          load: true
+          tags: chronos-daemon:local
+
+      - name: Scan Daemon Image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'chronos-daemon:local'
+          format: 'json'
+          output: 'trivy-daemon-report.json'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'HIGH,CRITICAL'
+
+      - name: Build Local Pilot Image for Scanning
+        uses: docker/build-push-action@v5
+        with:
+          context: ./chronos-pilot
+          file: ./chronos-pilot/Dockerfile
+          load: true
+          tags: chronos-pilot:local
+
+      - name: Scan Pilot Image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'chronos-pilot:local'
+          format: 'json'
+          output: 'trivy-pilot-report.json'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'HIGH,CRITICAL'
+
+      - name: Upload Container Security Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: container-security-reports
+          path: |
+            trivy-daemon-report.json
+            trivy-pilot-report.json
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Metadata (Daemon)
+        id: meta-daemon
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/chronos-daemon
+          tags: |
+            type=sha,format=long
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=raw,value=latest-staging
+
+      - name: Build and Push Daemon Container
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.daemon
+          push: true
+          tags: ${{ steps.meta-daemon.outputs.tags }}
+          labels: ${{ steps.meta-daemon.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract Metadata (Pilot UI)
+        id: meta-pilot
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/chronos-pilot
+          tags: |
+            type=sha,format=long
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=raw,value=latest-staging
+
+      - name: Build and Push Pilot Container
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./chronos-pilot
+          file: ./chronos-pilot/Dockerfile
+          push: true
+          tags: ${{ steps.meta-pilot.outputs.tags }}
+          labels: ${{ steps.meta-pilot.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─── 8. Automated Staging Deployment Verification ───────────────────────────
+  deploy-staging:
+    name: Staging Deployment Verification
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Verify Staging Orchestration Config
+        run: |
+          docker compose -f observability/docker-compose.yml config

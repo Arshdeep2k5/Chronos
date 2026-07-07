@@ -1,0 +1,25 @@
+[package]
+name = "chronos-execution-feedback"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+chronos-core = { path = "../chronos-core" }
+chronos-bus = { path = "../chronos-bus" }
+chronos-store = { path = "../chronos-store" }
+chronos-logging = { path = "../chronos-logging" }
+chronos-reasoning-commitments = { path = "../chronos-reasoning-commitments" }
+chronos-reasoning-intent = { path = "../chronos-reasoning-intent" }
+chronos-reasoning-continuity = { path = "../chronos-reasoning-continuity" }
+chronos-reasoning-coherence = { path = "../chronos-reasoning-coherence" }
+chronos-reasoning-decision = { path = "../chronos-reasoning-decision" }
+chronos-execution-orchestration = { path = "../chronos-execution-orchestration" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+tokio = { version = "1.37", features = ["sync", "macros"] }
+anyhow = "1.0"
+tracing = "0.1"
+
+[dev-dependencies]
+tempfile = "3.10"

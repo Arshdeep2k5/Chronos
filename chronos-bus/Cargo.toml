@@ -1,0 +1,13 @@
+[package]
+name = "chronos-bus"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+chronos-core = { path = "../chronos-core" }
+tokio = { version = "1.37", features = ["sync", "macros", "rt-multi-thread"] }
+async-trait = "0.1"
+thiserror = "1.0"
+
+[dev-dependencies]
+serde_json = "1.0"
